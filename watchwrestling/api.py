@@ -5,7 +5,7 @@ import discord
 
 from .errors import IdleUserAPIError, ResourceNotFoundError, ValidationError
 
-BASE_URL = "http://rpi3bp:8080/"
+BASE_URL = "https://idleuser.com/"
 
 log = logging.getLogger("red.idleuser-cogs.WatchWrestling")
 
