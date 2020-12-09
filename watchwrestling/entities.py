@@ -1,12 +1,10 @@
 from datetime import datetime
 import json
 
+from .api import BASE_URL
 from .utils import quickembed
 
 import discord
-
-
-BASE_URL = "https://idleuser.com/"
 
 
 class User:

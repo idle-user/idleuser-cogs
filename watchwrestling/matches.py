@@ -4,7 +4,7 @@ import logging
 import discord
 from redbot.core import commands
 
-from .api import IdleUserAPI
+from .api import IdleUserAPI, BASE_URL
 from .utils import quickembed, checks
 from .entities import User, Superstar, Match
 from .errors import (
@@ -13,7 +13,6 @@ from .errors import (
     ResourceNotFoundError,
     ValidationError,
 )
-
 
 log = logging.getLogger("red.watchwrestling.matches")
 
@@ -105,9 +104,7 @@ class Matches(IdleUserAPI, commands.Cog):
         embed = discord.Embed(description="Season {}".format(season), color=0x0080FF)
         embed.set_author(
             name="Leaderboard",
-            url="https://idleuser.com/projects/matches/leaderboard?season_id={}".format(
-                season
-            ),
+            url=BASE_URL + "projects/matches/leaderboard?season_id={}".format(season),
             icon_url=self.bot.user.avatar_url,
         )
         lb = [

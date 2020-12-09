@@ -1,7 +1,3 @@
-import discord
-from discord.ext import commands
-
-
 def confirm(author):
     def inner_check(ctx):
         return author == ctx.author and ctx.content.upper() in ["Y", "N"]
