@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
 
-from .api import BASE_URL
+from .matches import BASE_URL
 from .utils import quickembed
 
 import discord
@@ -16,7 +16,7 @@ class User:
         self.discord_id = data["discord_id"]
         self.chatango_id = data["chatango_id"]
         self.twitter_id = data["twitter_id"]
-        self.url = BASE_URL + "projects/matches/user?user_id={}".format(self.id)
+        self.url = BASE_URL + "user?user_id={}".format(self.id)
         self.is_registered = True if self.id else False
 
     @classmethod
@@ -81,7 +81,7 @@ class Superstar:
         embed = discord.Embed(color=quickembed.color["blue"])
         embed.set_author(
             name=self.name,
-            url=BASE_URL + "projects/matches/superstar?superstar_id={}".format(self.id),
+            url=BASE_URL + "superstar?superstar_id={}".format(self.id),
         )
         if self.dob:
             embed.add_field(
@@ -145,7 +145,7 @@ class Match:
         self.star_rating = "".join(
             ["★" if self.user_rating_avg >= i else "☆" for i in range(1, 6)]
         )
-        self.url = BASE_URL + "projects/matches/matches?match_id={}".format(self.id)
+        self.url = BASE_URL + "matches?match_id={}".format(self.id)
         self.team_list = data["team_list"]
 
     def team_id_by_member_name(self, name):
