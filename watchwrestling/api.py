@@ -1,11 +1,15 @@
 import aiohttp
 import logging
+import random
+import string
 
 import discord
 
 from .errors import IdleUserAPIError, ResourceNotFoundError, ValidationError
 
-BASE_URL = "https://api.idleuser.com/"
+
+API_URL = "https://api.idleuser.com/"
+WEB_URL = "https://idleuser.com/projects/matches/"
 
 log = logging.getLogger("red.idleuser-cogs.WatchWrestling")
 
@@ -25,13 +29,13 @@ class IdleUserAPI:
 
     async def get_idleusercom_response(self, route, params):
         async with aiohttp.ClientSession() as session:
-            async with session.get(BASE_URL + route, params=params) as resp:
+            async with session.get(API_URL + route, params=params) as resp:
                 return await self.handle_response(resp)
 
     async def post_idleusercom_response(self, route, params, payload):
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                BASE_URL + route, params=params, json=payload
+                API_URL + route, params=params, json=payload
             ) as resp:
                 return await self.handle_response(resp)
 
@@ -60,6 +64,9 @@ class IdleUserAPI:
 
     async def get_user_by_id(self, user_id):
         return await self.get_response("users/{}".format(user_id))
+
+    async def get_user_by_username(self, username):
+        return await self.get_response("users/username/{}".format(username))
 
     async def get_user_by_discord_id(self, discord_id):
         return await self.get_response("users/discord/{}".format(discord_id))
@@ -122,3 +129,20 @@ class IdleUserAPI:
             "points": points,
         }
         return await self.post_response("watchwrestling/bet", payload)
+
+    async def post_user_login_token(self, user_id):
+        payload = {
+            "user_id": user_id,
+        }
+        return await self.post_response("users/login/token", payload)
+
+    async def post_user_register(self, username, discord_id=None, chatango_id=None):
+        payload = {
+            "username": username,
+            "secret": "".join(
+                random.choices(string.ascii_letters + string.digits, k=15)
+            ),
+            "discord_id": discord_id,
+            "chatango_id": chatango_id,
+        }
+        return await self.post_response("users/register", payload)

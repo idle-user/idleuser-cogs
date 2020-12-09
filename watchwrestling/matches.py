@@ -1,10 +1,11 @@
 import asyncio
 import logging
 
+
 import discord
 from redbot.core import commands
 
-from .api import IdleUserAPI
+from .api import IdleUserAPI, WEB_URL
 from .utils import quickembed, checks
 from .entities import User, Superstar, Match
 from .errors import (
@@ -13,8 +14,6 @@ from .errors import (
     ResourceNotFoundError,
     ValidationError,
 )
-
-BASE_URL = "https://idleuser.com/projects/matches/"
 
 log = logging.getLogger("red.watchwrestling.matches")
 
@@ -29,13 +28,20 @@ class Matches(IdleUserAPI, commands.Cog):
             error_msg = None
             if isinstance(error.original, asyncio.TimeoutError):
                 error_msg = "Took too long to confirm. Try again."
-            elif isinstance(error.original, IdleUserAPIError):
-                error_msg = str(error.original)
             elif isinstance(error.original, (ValueError, IndexError)):
                 error_msg = "Invalid index"
+            elif isinstance(error.original, UserNotRegistered):
+                error_msg = (
+                    "Must be registered to use that command. `!register` to register."
+                )
+            elif isinstance(error.original, IdleUserAPIError):
+                error_msg = str(error.original)
             if error_msg:
                 user = await self.grab_user(ctx.author)
                 await ctx.send(embed=quickembed.error(desc=error_msg, user=user))
+            else:
+                await ctx.send(embed=quickembed.error(desc="something broke"))
+                raise error
 
     async def grab_user(self, author: discord.User) -> User:
         try:
@@ -46,6 +52,51 @@ class Matches(IdleUserAPI, commands.Cog):
             user = User.unregistered_user()
             user.discord = author
         return user
+
+    async def dm_user_login_link(self, user: User):
+        token = await self.post_user_login_token(user.id)
+        login_link = WEB_URL + "?uid={}&token={}".format(user.id, token)
+        msg = "Quick login link for you! (link expires in 5 minutes)\n<{}>".format(
+            login_link
+        )
+        await user.discord.send(embed=quickembed.general(desc=msg, user=user))
+
+    @commands.command(name="login")
+    async def user_login_token_link(self, ctx):
+        user = await self.grab_user(ctx.author)
+        if not user.is_registered:
+            raise UserNotRegistered()
+        await self.dm_user_login_link(user)
+        embed = quickembed.success(desc="Login link DMed", user=user)
+        await ctx.send(embed=embed)
+
+    @user_login_token_link.error
+    async def user_login_token_link_error(self, ctx, error):
+        pass
+
+    @commands.command(name="register")
+    async def user_register(self, ctx):
+        user = await self.grab_user(ctx.author)
+        if user.is_registered:
+            embed = quickembed.notice(
+                desc="Your Discord is already registered. Use `!login` to login.",
+                user=user,
+            )
+        else:
+            username = "{}{}".format(user.discord.name, user.discord.discriminator)
+            data = await self.post_user_register(
+                username=username, discord_id=str(user.discord.id)
+            )
+            user = User(data)
+            user.discord = ctx.author
+            await self.dm_user_login_link(user)
+            embed = quickembed.success(desc="Successfully registered", user=user)
+        if embed:
+            await ctx.send(embed=embed)
+
+    @user_register.error
+    async def user_register_error(self, ctx, error):
+        pass
 
     @commands.command(name="stats", aliases=["me", "bal", "points"])
     async def user_stats(self, ctx, season=4):
@@ -106,7 +157,7 @@ class Matches(IdleUserAPI, commands.Cog):
         embed = discord.Embed(description="Season {}".format(season), color=0x0080FF)
         embed.set_author(
             name="Leaderboard",
-            url=BASE_URL + "leaderboard?season_id={}".format(season),
+            url=WEB_URL + "/leaderboard?season_id={}".format(season),
             icon_url=self.bot.user.avatar_url,
         )
         lb = [
