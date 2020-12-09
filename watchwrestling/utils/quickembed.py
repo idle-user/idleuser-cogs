@@ -60,3 +60,9 @@ def question(desc, user=None):
     embed = discord.Embed(color=color["yellow"])
     embed = filler(embed=embed, desc=desc, user=user)
     return embed
+
+
+def notice(desc, user=None):
+    embed = discord.Embed(color=color["orange"])
+    embed = filler(embed=embed, desc=desc, user=user)
+    return embed
