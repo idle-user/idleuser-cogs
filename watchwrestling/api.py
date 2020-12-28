@@ -26,6 +26,16 @@ class IdleUserAPI:
     def __init__(self, bot):
         self.bot = bot
 
+    async def stored_auth_token(self):
+        auth = await self.bot.get_shared_api_tokens("idleuser")
+        return auth
+
+    async def get_headers(self):
+        auth = await self.stored_auth_token()
+        auth_token = auth.get("auth_token", "")
+        headers = {"Authorization": "Bearer {}".format(auth_token)}
+        return headers
+
     async def get_idleusercom_response(self, route, params={}):
         headers = await self.get_headers()
         async with aiohttp.ClientSession(headers=headers) as session:
@@ -66,16 +76,6 @@ class IdleUserAPI:
             else:
                 log.error(data)
                 raise IdleUserAPIError("{} - {}".format(response.status, error_msg))
-
-    async def get_headers(self):
-        auth = await self.stored_auth_token()
-        auth_token = auth.get("auth_token", "")
-        headers = {"Authorization": "Bearer {}".format(auth_token)}
-        return headers
-
-    async def stored_auth_token(self):
-        auth = await self.bot.get_shared_api_tokens("idleuser")
-        return auth
 
     async def get_user_by_id(self, user_id):
         return await self.get_idleusercom_response(route="users/{}".format(user_id))
