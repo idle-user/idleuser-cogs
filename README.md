@@ -17,3 +17,4 @@ Add the cogs to your instance with: `[p]repo add idleuser-cogs https://github.co
 | Name | Status/Version | Description | Authors |
 |------|----------------|-------------|---------|
 | WatchWrestling | Development | <details><summary>Bet and rate upcoming wrestling matches.</summary>Communicate with idleuser.com's [Matches](https://idleuser.com/projects/matches/) via API.</details> | idle-user |
+| EasyEmbed | Development | <details><summary>Quickly have the bot embed messages.</summary>Stylize bot messages quickly. Includes editing existing messages.</details> | idle-user |
