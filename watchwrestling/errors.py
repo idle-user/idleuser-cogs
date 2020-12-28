@@ -6,17 +6,33 @@ class NoTokenFound(IdleUserAPIError):
     pass
 
 
-class ValidationError(IdleUserAPIError):
-    pass
-
-
-class InvalidToken(IdleUserAPIError):
-    pass
-
-
-class ResourceNotFoundError(IdleUserAPIError):
-    pass
-
-
 class UserNotRegistered(IdleUserAPIError):
+    pass
+
+
+class BadRequest(IdleUserAPIError):
+    pass
+
+
+class Unauthenticated(IdleUserAPIError):
+    pass
+
+
+class InsufficientPrivileges(IdleUserAPIError):
+    pass
+
+
+class ResourceNotFound(IdleUserAPIError):
+    pass
+
+
+class MethodNotAllowed(IdleUserAPIError):
+    pass
+
+
+class ConflictError(IdleUserAPIError):
+    pass
+
+
+class ValidationError(IdleUserAPIError):
     pass
