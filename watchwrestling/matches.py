@@ -15,7 +15,7 @@ from .errors import (
     ValidationError,
 )
 
-log = logging.getLogger("red.watchwrestling.matches")
+log = logging.getLogger("red.idleuser-cogs.WatchWrestling")
 
 
 class Matches(IdleUserAPI, commands.Cog):
