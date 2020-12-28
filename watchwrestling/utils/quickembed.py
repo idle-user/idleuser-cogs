@@ -12,7 +12,7 @@ color = {
 }
 
 
-def filler(embed, desc, user):
+def filler(embed, desc, footer, user):
     if user:
         if user.discord.bot:
             embed.set_author(name=desc, icon_url=user.discord.avatar_url)
@@ -24,7 +24,10 @@ def filler(embed, desc, user):
             )
         else:
             embed.set_author(name=user.discord, icon_url=user.discord.avatar_url)
+            embed.set_footer(text="User not registered.")
         embed.description = desc
+        if footer:
+            embed.set_footer(text=footer)
     else:
         embed.set_author(name="Notification")
 
@@ -32,37 +35,37 @@ def filler(embed, desc, user):
     return embed
 
 
-def general(desc, user=None):
+def general(desc, footer=None, user=None):
     embed = discord.Embed(color=color["blue"])
-    embed = filler(embed=embed, desc=desc, user=user)
+    embed = filler(embed=embed, desc=desc, footer=footer, user=user)
     return embed
 
 
-def info(desc, user=None):
+def info(desc, footer=None, user=None):
     embed = discord.Embed(color=color["white"])
-    embed = filler(embed=embed, desc=desc, user=user)
+    embed = filler(embed=embed, desc=desc, footer=footer, user=user)
     return embed
 
 
-def error(desc, user=None):
+def error(desc, footer=None, user=None):
     embed = discord.Embed(color=color["red"])
-    embed = filler(embed=embed, desc=desc, user=user)
+    embed = filler(embed=embed, desc=desc, footer=footer, user=user)
     return embed
 
 
-def success(desc, user=None):
+def success(desc, footer=None, user=None):
     embed = discord.Embed(color=color["green"])
-    embed = filler(embed=embed, desc=desc, user=user)
+    embed = filler(embed=embed, desc=desc, footer=footer, user=user)
     return embed
 
 
-def question(desc, user=None):
+def question(desc, footer=None, user=None):
     embed = discord.Embed(color=color["yellow"])
-    embed = filler(embed=embed, desc=desc, user=user)
+    embed = filler(embed=embed, desc=desc, footer=footer, user=user)
     return embed
 
 
-def notice(desc, user=None):
+def notice(desc, footer=None, user=None):
     embed = discord.Embed(color=color["orange"])
-    embed = filler(embed=embed, desc=desc, user=user)
+    embed = filler(embed=embed, desc=desc, footer=footer, user=user)
     return embed
