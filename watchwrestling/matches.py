@@ -11,7 +11,7 @@ from .entities import User, Superstar, Match
 from .errors import (
     IdleUserAPIError,
     UserNotRegistered,
-    ResourceNotFoundError,
+    ResourceNotFound,
     ValidationError,
 )
 
@@ -40,7 +40,9 @@ class Matches(IdleUserAPI, commands.Cog):
                 user = await self.grab_user(ctx.author)
                 await ctx.send(embed=quickembed.error(desc=error_msg, user=user))
             else:
-                await ctx.send(embed=quickembed.error(desc="something broke"))
+                await ctx.send(
+                    embed=quickembed.error(desc="Something broke. Check logs.")
+                )
                 raise error
 
     async def grab_user(self, author: discord.User) -> User:
@@ -48,7 +50,7 @@ class Matches(IdleUserAPI, commands.Cog):
             data = await self.get_user_by_discord_id(author.id)
             user = User(data)
             user.discord = author
-        except ResourceNotFoundError:
+        except ResourceNotFound:
             user = User.unregistered_user()
             user.discord = author
         return user
@@ -56,10 +58,10 @@ class Matches(IdleUserAPI, commands.Cog):
     async def dm_user_login_link(self, user: User):
         token = await self.post_user_login_token(user.id)
         login_link = WEB_URL + "?uid={}&token={}".format(user.id, token)
-        msg = "Quick login link for you! (link expires in 5 minutes)\n<{}>".format(
-            login_link
-        )
-        await user.discord.send(embed=quickembed.general(desc=msg, user=user))
+        desc = "Quick login link for you!\n<{}>".format(login_link)
+        footer = "Link expires in 5 minutes. Do not share it."
+        embed = quickembed.general(desc=desc, footer=footer, user=user)
+        await user.discord.send(embed=embed)
 
     @commands.command(name="login")
     async def user_login_token_link(self, ctx):
@@ -207,7 +209,7 @@ class Matches(IdleUserAPI, commands.Cog):
                     inline=True,
                 )
         else:
-            raise ResourceNotFoundError("No open bet matches found")
+            raise ResourceNotFound("No open bet matches found")
         await ctx.send(embed=embed)
 
     @open_matches.error
@@ -273,7 +275,7 @@ class Matches(IdleUserAPI, commands.Cog):
                 if superstar_name.lower() in temp_match.contestants.lower():
                     match = temp_match
                     break
-        except ResourceNotFoundError:
+        except ResourceNotFound:
             embed = quickembed.error(desc="No open bet matches available", user=user)
         # if match not found, prepare error message
         if not match:
@@ -287,7 +289,7 @@ class Matches(IdleUserAPI, commands.Cog):
             try:
                 await self.get_bet_by_id(match.id, user.id)
                 raise IdleUserAPIError("Bet on this match already placed")
-            except ResourceNotFoundError:
+            except ResourceNotFound:
                 pass
             # gather team info by superstar name
             team_id = match.team_id_by_member_name(superstar_name)

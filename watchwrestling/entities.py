@@ -10,12 +10,9 @@ import discord
 class User:
     def __init__(self, data):
         self.id = data["id"]
-        self.access = data["access"]
         self.username = data["username"]
+        self.last_login = data["last_login"]
         self.date_created = data["date_created"]
-        self.discord_id = data["discord_id"]
-        self.chatango_id = data["chatango_id"]
-        self.twitter_id = data["twitter_id"]
         self.url = WEB_URL + "user?user_id={}".format(self.id)
         self.is_registered = True if self.id else False
 
@@ -24,12 +21,9 @@ class User:
         return cls(
             {
                 "id": 0,
-                "access": 0,
                 "username": 0,
+                "last_login": 0,
                 "date_created": 0,
-                "discord_id": 0,
-                "chatango_id": 0,
-                "twitter_id": 0,
             }
         )
 
@@ -39,7 +33,9 @@ class User:
         embed.add_field(name="Losses", value=data["losses"], inline=True)
         embed.add_field(
             name="Ratio",
-            value="{:.3f}".format(data["wins"] / data["losses"]),
+            value="{:.3f}".format(
+                data["wins"] / (1 if data["losses"] == 0 else data["losses"])
+            ),
             inline=True,
         )
         embed.add_field(
@@ -52,6 +48,10 @@ class User:
             value="{:,}".format(int(data["available_points"])),
             inline=True,
         )
+        if self.date_created:
+            embed.set_footer(
+                text="Member since: {}".format(self.date_created.split()[0])
+            )
         return embed
 
 
@@ -102,10 +102,12 @@ class Superstar:
                 inline=True,
             )
         if self.bio:
-            bio = "{} ...".format(self.bio[:1000]) if len(self.bio) > 1000 else self.bio
+            bio = "{} ...".format(self.bio[:900]) if len(self.bio) > 900 else self.bio
             embed.add_field(name="\u200b", value="```{}```".format(bio), inline=False)
         if self.image_url:
             embed.set_image(url=self.image_url)
+        if self.last_updated:
+            embed.set_footer(text="Last updated: {}".format(self.last_updated))
         return embed
 
 
@@ -252,4 +254,6 @@ class Match:
             embed.add_field(
                 name="Team Won", value="{}".format(self.team_won), inline=True
             )
+        if self.calc_last_updated:
+            embed.set_footer(text="Last updated: {}".format(self.calc_last_updated))
         return embed
