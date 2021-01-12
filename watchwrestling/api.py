@@ -17,7 +17,7 @@ from .errors import (
 )
 
 API_URL = "https://api.idleuser.com/"
-WEB_URL = "https://idleuser.com/projects/matches/"
+WEB_URL = "https://idleuser.com/"
 
 log = logging.getLogger("red.idleuser-cogs.WatchWrestling")
 
@@ -165,6 +165,14 @@ class IdleUserAPI:
         }
         return await self.post_idleusercom_response(
             route="users/login/token", payload=payload
+        )
+
+    async def post_user_secret_token(self, user_id):
+        payload = {
+            "user_id": user_id,
+        }
+        return await self.post_idleusercom_response(
+            route="users/secret/token", payload=payload
         )
 
     async def post_user_register(self, username, discord_id=None, chatango_id=None):

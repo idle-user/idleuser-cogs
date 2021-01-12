@@ -57,8 +57,24 @@ class Matches(IdleUserAPI, commands.Cog):
 
     async def dm_user_login_link(self, user: User):
         token = await self.post_user_login_token(user.id)
-        login_link = WEB_URL + "?uid={}&token={}".format(user.id, token)
+        login_link = WEB_URL + "projects/matches?uid={}&token={}".format(
+            user.id, token
+        )
         desc = "Quick login link for you!\n<{}>".format(login_link)
+        footer = "Link expires in 5 minutes. Do not share it."
+        embed = quickembed.general(desc=desc, footer=footer, user=user)
+        await user.discord.send(embed=embed)
+
+    async def dm_user_reset_link(self, user: User):
+        login_token = await self.post_user_login_token(user.id)
+        secret_token = await self.post_user_secret_token(user.id)
+        login_link = (
+            WEB_URL
+            + "account/change-password?uid={}&token={}&temp_pw={}".format(
+                user.id, login_token, secret_token
+            )
+        )
+        desc = "Quick password reset link for you!\n<{}>".format(login_link)
         footer = "Link expires in 5 minutes. Do not share it."
         embed = quickembed.general(desc=desc, footer=footer, user=user)
         await user.discord.send(embed=embed)
@@ -98,6 +114,19 @@ class Matches(IdleUserAPI, commands.Cog):
 
     @user_register.error
     async def user_register_error(self, ctx, error):
+        pass
+
+    @commands.command(name="password-reset", aliases=["reset-pw", "reset-password"])
+    async def user_secret_token_link(self, ctx):
+        user = await self.grab_user(ctx.author)
+        if not user.is_registered:
+            raise UserNotRegistered()
+        await self.dm_user_reset_link(user)
+        embed = quickembed.success(desc="Password reset link DMed", user=user)
+        await ctx.send(embed=embed)
+
+    @user_secret_token_link.error
+    async def user_login_secret_link_error(self, ctx, error):
         pass
 
     @commands.command(name="stats", aliases=["me", "bal", "points"])
@@ -159,7 +188,7 @@ class Matches(IdleUserAPI, commands.Cog):
         embed = discord.Embed(description="Season {}".format(season), color=0x0080FF)
         embed.set_author(
             name="Leaderboard",
-            url=WEB_URL + "/leaderboard?season_id={}".format(season),
+            url=WEB_URL + "projects/matches/leaderboard?season_id={}".format(season),
             icon_url=self.bot.user.avatar_url,
         )
         lb = [
