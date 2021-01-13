@@ -69,7 +69,7 @@ class Matches(IdleUserAPI, commands.Cog):
         secret_token = await self.post_user_secret_token(user.id)
         login_link = WEB_URL + "reset-password?&reset_token={}".format(secret_token)
         desc = "Quick password reset link for you!\n<{}>".format(login_link)
-        footer = "Link expires in 5 minutes. Do not share it."
+        footer = "Link expires in 30 minutes. Do not share it."
         embed = quickembed.general(desc=desc, footer=footer, user=user)
         await user.discord.send(embed=embed)
 
