@@ -56,9 +56,9 @@ class Matches(IdleUserAPI, commands.Cog):
         return user
 
     async def dm_user_login_link(self, user: User):
-        token = await self.post_user_login_token(user.id)
-        login_link = WEB_URL + "projects/matches/?uid={}&login_token={}".format(
-            user.id, token
+        login_token = await self.post_user_login_token(user.id)
+        login_link = WEB_URL + "?login_token={}&redirect_to=/projects/matches/".format(
+            login_token
         )
         desc = "Quick login link for you!\n<{}>".format(login_link)
         footer = "Link expires in 5 minutes. Do not share it."
@@ -67,8 +67,8 @@ class Matches(IdleUserAPI, commands.Cog):
 
     async def dm_user_reset_link(self, user: User):
         secret_token = await self.post_user_secret_token(user.id)
-        login_link = WEB_URL + "reset-password?&reset_token={}".format(secret_token)
-        desc = "Quick password reset link for you!\n<{}>".format(login_link)
+        reset_link = WEB_URL + "reset-password?reset_token={}".format(secret_token)
+        desc = "Quick password reset link for you!\n<{}>".format(reset_link)
         footer = "Link expires in 30 minutes. Do not share it."
         embed = quickembed.general(desc=desc, footer=footer, user=user)
         await user.discord.send(embed=embed)
