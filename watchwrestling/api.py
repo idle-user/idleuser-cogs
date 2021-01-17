@@ -100,6 +100,11 @@ class IdleUserAPI:
             route="watchwrestling/bets/match/{}/user/{}".format(match_id, user_id)
         )
 
+    async def get_user_current_bets(self, user_id):
+        return await self.get_idleusercom_response(
+            route="watchwrestling/bets/user/{}/current/detail".format(user_id)
+        )
+
     async def get_leaderboard_by_season_id(self, season_id):
         return await self.get_idleusercom_response(
             route="watchwrestling/stats/leaderboard/season/{}".format(season_id)
