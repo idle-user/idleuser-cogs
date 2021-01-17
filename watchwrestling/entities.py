@@ -54,6 +54,22 @@ class User:
             )
         return embed
 
+    def bets_embed(self, data):
+        embed = quickembed.general(desc="Current Bets", user=self)
+        for bet in data:
+            bet_text = "`{:,}` points on `{}`\n**Potential Winnings:** `{:,}` ({:.3f}%)".format(
+                bet["bet_amount"],
+                bet["bet_on"],
+                bet["potential_cut_points"],
+                float(bet["potential_cut_pct"]) * 100,
+            )
+            embed.add_field(
+                name="[{}]".format(bet["match_id"]), value=bet_text, inline=False
+            )
+        if self.date_created:
+            embed.set_footer(text="All bets are final.")
+        return embed
+
 
 class Superstar:
     def __init__(self, data):

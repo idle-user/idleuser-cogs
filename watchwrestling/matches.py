@@ -28,8 +28,8 @@ class Matches(IdleUserAPI, commands.Cog):
             error_msg = None
             if isinstance(error.original, asyncio.TimeoutError):
                 error_msg = "Took too long to confirm. Try again."
-            elif isinstance(error.original, (ValueError, IndexError)):
-                error_msg = "Invalid index"
+            # elif isinstance(error.original, (ValueError, IndexError)):
+            #     error_msg = "Invalid index"
             elif isinstance(error.original, UserNotRegistered):
                 error_msg = (
                     "Must be registered to use that command. `!register` to register."
@@ -349,4 +349,16 @@ class Matches(IdleUserAPI, commands.Cog):
 
     @bet_match.error
     async def bet_match_error(self, ctx, error):
+        pass
+
+    @commands.command(name="bets")
+    async def user_current_bets(self, ctx):
+        user = await self.grab_user(ctx.author)
+        if not user.is_registered:
+            raise UserNotRegistered()
+        bets_info = await self.get_user_current_bets(user.id)
+        await ctx.send(embed=user.bets_embed(bets_info))
+
+    @current_match_info.error
+    async def user_current_bets_error(self, ctx, error):
         pass
