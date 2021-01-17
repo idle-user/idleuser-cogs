@@ -13,7 +13,7 @@ class User:
         self.username = data["username"]
         self.last_login = data["last_login"]
         self.date_created = data["date_created"]
-        self.url = WEB_URL + "user?user_id={}".format(self.id)
+        self.url = WEB_URL + "projects/matches/user?user_id={}".format(self.id)
         self.is_registered = True if self.id else False
 
     @classmethod
@@ -147,7 +147,7 @@ class Match:
         self.star_rating = "".join(
             ["★" if self.user_rating_avg >= i else "☆" for i in range(1, 6)]
         )
-        self.url = WEB_URL + "matches?match_id={}".format(self.id)
+        self.url = WEB_URL + "projects/matches/matches?match_id={}".format(self.id)
         self.team_list = data["team_list"]
 
     def team_id_by_member_name(self, name):
