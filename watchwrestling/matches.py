@@ -6,7 +6,7 @@ import discord
 from redbot.core import commands
 
 from .api import IdleUserAPI, WEB_URL
-from .utils import quickembed, checks
+from .utils import quickembed
 from .entities import User, Superstar, Match
 from .errors import (
     IdleUserAPIError,
@@ -164,7 +164,9 @@ class Matches(IdleUserAPI, commands.Cog):
             msg = msg + "```"
             await ctx.send(embed=quickembed.question(desc=msg, user=user))
             response = await self.bot.wait_for(
-                "message", check=checks.is_number(ctx.author), timeout=15.0
+                "message",
+                check=lambda m: m.author == ctx.author and m.content.isdigit(),
+                timeout=15.0,
             )
             index = int(response.content)
             embed = superstar_list[index - 1].info_embed()
@@ -300,12 +302,14 @@ class Matches(IdleUserAPI, commands.Cog):
                     break
         except ResourceNotFound:
             embed = quickembed.error(desc="No open bet matches available", user=user)
+            await ctx.send(embed=embed)
         # if match not found, prepare error message
         if not match:
             error_msg = "Unable to find an open match for contestant `{}`".format(
                 superstar_name
             )
             embed = quickembed.error(desc=error_msg, user=user)
+            await ctx.send(embed=embed)
         # if match found, gather info and confirm bet
         else:
             # check if already bet
@@ -318,34 +322,54 @@ class Matches(IdleUserAPI, commands.Cog):
             team_id = match.team_id_by_member_name(superstar_name)
             team = match.team_by_id(team_id)
             # confirm bet
-            question_embed = quickembed.question(
-                desc="[Y/N] Place this bet?", user=user
+            confirm_embed = quickembed.question(
+                desc="**Place this bet?**",
+                footer="All bets are final.",
+                user=user,
             )
-            question_embed.add_field(
-                name="Info", value=match.info_text_short(), inline=False
+            confirm_embed.add_field(
+                name="Match {}".format(match.id),
+                value=match.info_text_short(),
+                inline=False,
             )
-            question_embed.add_field(
-                name="Betting", value="{:,}".format(bet), inline=True
+            confirm_embed.add_field(
+                name="Bet Amount", value="{:,}".format(bet), inline=True
             )
-            question_embed.add_field(
+            confirm_embed.add_field(
                 name="Betting On", value=team["members"], inline=True
             )
-            await ctx.send(embed=question_embed)
-            confirm = await self.bot.wait_for(
-                "message", check=checks.confirm(ctx.author), timeout=15.0
-            )
-            confirm.content = confirm.content.upper()
-            # await user confirmation
-            if confirm.content == "Y":
-                # process bet
-                await self.post_match_bet(user.id, match.id, team_id, bet)
-                msg = "Placed `{:,}` point bet on `{}`".format(bet, team["members"])
-                embed = quickembed.success(desc=msg, user=user)
-            elif confirm.content == "N":
-
-                # cancel bet
-                embed = quickembed.error(desc="Bet cancelled", user=user)
-        await ctx.send(embed=embed)
+            confirm_message = await ctx.send(embed=confirm_embed)
+            await confirm_message.add_reaction("✅")
+            await confirm_message.add_reaction("❎")
+            try:
+                reaction, author = await self.bot.wait_for(
+                    "reaction_add",
+                    check=lambda reaction, author: author == ctx.author
+                    and str(reaction.emoji) in ["✅", "❎"],
+                    timeout=15.0,
+                )
+            except asyncio.TimeoutError:
+                reaction = False
+                embed = quickembed.error(
+                    desc="Bet cancelled.",
+                    footer="Took too long to confirm. Try again.",
+                    user=user,
+                )
+            # await user confirmation via reaction
+            if reaction:
+                if str(reaction.emoji) == "✅":
+                    # process bet
+                    await self.post_match_bet(user.id, match.id, team_id, bet)
+                    msg = "Placed `{:,}` point bet on `{}`".format(bet, team["members"])
+                    embed = quickembed.success(
+                        desc=msg, footer="All bets are final.", user=user
+                    )
+                else:
+                    embed = quickembed.error(
+                        desc="Bet cancelled.", footer="Requested by user.", user=user
+                    )
+            await confirm_message.edit(embed=embed)
+            await confirm_message.clear_reactions()
 
     @bet_match.error
     async def bet_match_error(self, ctx, error):
