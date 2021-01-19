@@ -55,10 +55,10 @@ class Matches(IdleUserAPI, commands.Cog):
             user.discord = author
         return user
 
-    async def dm_user_login_link(self, user: User):
+    async def dm_user_login_link(self, user: User, redirect_to="/projects/matches/"):
         login_token = await self.post_user_login_token(user.id)
-        login_link = WEB_URL + "?login_token={}&redirect_to=/projects/matches/".format(
-            login_token
+        login_link = WEB_URL + "?login_token={}&redirect_to={}".format(
+            login_token, redirect_to
         )
         desc = "Quick login link for you!\n<{}>".format(login_link)
         footer = "Link expires in 5 minutes. Do not share it."
@@ -133,6 +133,19 @@ class Matches(IdleUserAPI, commands.Cog):
 
     @user_stats.error
     async def user_stats_error(self, ctx, error):
+        pass
+
+    @commands.command(name="rumble", aliases=["royalrumble"])
+    async def royalrumble_info(self, ctx):
+        user = await self.grab_user(ctx.author)
+        if not user.is_registered:
+            raise UserNotRegistered()
+        await self.dm_user_login_link(user, redirect_to="/projects/matches/royalrumble")
+        embed = quickembed.success(desc="Royal Rumble link DMed", user=user)
+        await ctx.send(embed=embed)
+
+    @royalrumble_info.error
+    async def royalrumble_info_error(self, ctx, error):
         pass
 
     @commands.command(name="ppv", aliases=["events"])
