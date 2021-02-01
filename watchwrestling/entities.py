@@ -195,7 +195,9 @@ class Match:
     def info_text(self):
         if self.completed:
             rating = "{0.star_rating} ({0.user_rating_avg})".format(self)
-            pot = "{0.base_pot:,} ({0.bet_multiplier}x) -> {0.total_pot:,}".format(self)
+            pot = "{:,} ({}x) -> {:,}".format(
+                int(self.base_pot), self.bet_multiplier, int(self.total_pot)
+            )
         else:
             rating = ""
             pot = "{0.base_pot:,} (?x) -> TBD".format(self)
@@ -251,14 +253,14 @@ class Match:
         embed.description = "{0.date} | {0.event}".format(self)
         embed.add_field(name="Bets", value="{}".format(bet_status), inline=True)
         embed.add_field(
-            name="Base Pot", value="{:,}".format(self.base_pot), inline=True
+            name="Base Pot", value="{:,}".format(int(self.base_pot)), inline=True
         )
         if self.completed:
             embed.add_field(
                 name="Multiplier", value="{}x".format(self.bet_multiplier), inline=True
             )
             embed.add_field(
-                name="Total Pot", value="{:,}".format(self.total_pot), inline=True
+                name="Total Pot", value="{:,}".format(int(self.total_pot)), inline=True
             )
         embed.add_field(
             name="Match Type", value="{}".format(self.match_type), inline=False
