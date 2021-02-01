@@ -58,9 +58,9 @@ class User:
         embed = quickembed.general(desc="Current Bets", user=self)
         for bet in data:
             bet_text = "`{:,}` points on `{}`\n**Potential Winnings:** `{:,}` ({:.3f}%)".format(
-                bet["bet_amount"],
+                int(bet["bet_amount"]),
                 bet["bet_on"],
-                bet["potential_cut_points"],
+                int(bet["potential_cut_points"]),
                 float(bet["potential_cut_pct"]) * 100,
             )
             embed.add_field(
