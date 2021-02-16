@@ -24,6 +24,9 @@ class Matches(IdleUserAPI, commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        # maybe use local handlers later
+        # if hasattr(ctx.command, "on_error"):
+        #     return
         if isinstance(error, commands.CommandInvokeError):
             error_msg = None
             if isinstance(error.original, asyncio.TimeoutError):
@@ -226,7 +229,10 @@ class Matches(IdleUserAPI, commands.Cog):
 
     @commands.command(name="matches", aliases=["open-matches"])
     async def open_matches(self, ctx):
-        openbet_match_data = await self.get_openbet_matches()
+        try:
+            openbet_match_data = await self.get_openbet_matches()
+        except ResourceNotFound:
+            raise ResourceNotFound("No open bet matches found")
         openbet_matches = []
         for match_data in openbet_match_data:
             temp_match = Match(match_data)
@@ -235,7 +241,7 @@ class Matches(IdleUserAPI, commands.Cog):
             openbet_matches.append(temp_match)
         if len(openbet_matches) == 1:
             embed = openbet_matches[0].info_embed()
-        elif len(openbet_matches) > 1:
+        else:
             embed = quickembed.info(desc="Short View - Use `!match [id]` for full view")
             embed.set_author(name="Open Bet Matches")
             for match in openbet_matches:
@@ -246,8 +252,6 @@ class Matches(IdleUserAPI, commands.Cog):
                     value="{}".format(match.info_text_short()),
                     inline=True,
                 )
-        else:
-            raise ResourceNotFound("No open bet matches found")
         await ctx.send(embed=embed)
 
     @open_matches.error
@@ -393,9 +397,12 @@ class Matches(IdleUserAPI, commands.Cog):
         user = await self.grab_user(ctx.author)
         if not user.is_registered:
             raise UserNotRegistered()
-        bets_info = await self.get_user_current_bets(user.id)
+        try:
+            bets_info = await self.get_user_current_bets(user.id)
+        except ResourceNotFound:
+            raise ResourceNotFound("No current bets found")
         await ctx.send(embed=user.bets_embed(bets_info))
 
-    @current_match_info.error
+    @user_current_bets.error
     async def user_current_bets_error(self, ctx, error):
         pass
