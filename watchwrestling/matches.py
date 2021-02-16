@@ -31,8 +31,8 @@ class Matches(IdleUserAPI, commands.Cog):
             error_msg = None
             if isinstance(error.original, asyncio.TimeoutError):
                 error_msg = "Took too long to confirm. Try again."
-            # elif isinstance(error.original, (ValueError, IndexError)):
-            #     error_msg = "Invalid index"
+            elif isinstance(error.original, (ValueError, IndexError)):
+                error_msg = "Invalid index"
             elif isinstance(error.original, UserNotRegistered):
                 error_msg = (
                     "Must be registered to use that command. `!register` to register."
@@ -181,7 +181,9 @@ class Matches(IdleUserAPI, commands.Cog):
             await ctx.send(embed=quickembed.question(desc=msg, user=user))
             response = await self.bot.wait_for(
                 "message",
-                check=lambda m: m.author == ctx.author and m.content.isdigit(),
+                check=lambda m: m.author == ctx.author
+                and m.content.isdigit()
+                and 1 <= int(m.content) <= len(superstar_list),
                 timeout=15.0,
             )
             index = int(response.content)
