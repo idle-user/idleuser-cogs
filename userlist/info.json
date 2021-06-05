@@ -12,7 +12,7 @@
     "required_cogs": {},
     "requirements": [],
     "min_python_version": [3, 7, 2],
-    "short": "Have the bot send an embeded message. Includes editing.",
+    "short": "Creates a quick list users can join.",
     "tags": ["idlebot", "userlist"],
     "type": "COG"
 }

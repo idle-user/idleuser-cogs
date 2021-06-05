@@ -103,8 +103,8 @@ class UserList(commands.Cog):
         try:
             message = await self.message_channel.fetch_message(self.message_id)
             current_embed = message.embeds[0]
-            current_embed.remove_field(0)
-            self.users.pop(0)
+            current_embed.remove_field(index)
+            self.users.pop(index)
             await message.edit(embed=current_embed)
             await ctx.message.add_reaction("✅")
         except discord.HTTPException:
