@@ -49,7 +49,9 @@ class EasyEmbed(commands.Cog):
         embed = await self.create_embed(title, description, footer, color)
         await ctx.send(embed=embed)
 
-    @commands.command(name="easyembed-edit", aliases=["easyembed-update, replacethis"])
+    @commands.command(
+        name="easyembed-edit", aliases=["easyembed-update", "replacethis"]
+    )
     @checks.is_owner()
     async def replace_embed_message(
         self,
