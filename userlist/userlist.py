@@ -55,7 +55,7 @@ class UserList(commands.Cog):
             current_embed = message.embeds[0]
             self.message_channel = channel
             self.message_id = message_id
-            self.users_max = re.sub("[^0-9]", "", current_embed.footer.text)
+            self.users_max = int(re.sub("[^0-9]", "", current_embed.footer.text))
             for field in current_embed.fields:
                 self.users.append(field.name)
             await ctx.message.add_reaction("✅")
@@ -113,14 +113,14 @@ class UserList(commands.Cog):
     @commands.command(name="userlist-join", aliases=["userlist-enter"])
     async def join_list(self, ctx, *, comment: str):
         if self.message_channel and self.message_id:
-            if ctx.author not in self.users:
+            if str(ctx.author) not in self.users:
                 try:
                     message = await self.message_channel.fetch_message(self.message_id)
                     embed = message.embeds[0]
                     if len(embed.fields) < self.users_max:
                         embed.add_field(name=ctx.author, value=comment, inline=False)
                         await message.edit(embed=embed)
-                        self.users.append(ctx.author)
+                        self.users.append(str(ctx.author))
                         await ctx.message.add_reaction("✅")
                     else:
                         await ctx.send(
