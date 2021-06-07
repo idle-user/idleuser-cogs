@@ -1,4 +1,5 @@
 import re
+import asyncio
 import string
 import logging
 
@@ -44,6 +45,8 @@ class UserList(commands.Cog):
     async def set_existing_list(self, ctx, users_max: int):
         self.users_max = users_max
         await ctx.message.add_reaction("✅")
+        await asyncio.sleep(3)
+        await ctx.message.delete()
 
     @commands.command(name="userlist-set")
     @commands.has_permissions(manage_messages=True)
@@ -60,8 +63,10 @@ class UserList(commands.Cog):
             for field in current_embed.fields:
                 self.users.append(field.name)
             await ctx.message.add_reaction("✅")
+            await asyncio.sleep(3)
+            await ctx.message.delete()
         except discord.HTTPException:
-            return await ctx.send("Existing list not found.")
+            return await ctx.send("Existing list not found.", delete_after=3.0)
 
     @commands.command(name="userlist-create", aliases=["userlist-start"])
     @commands.has_permissions(manage_messages=True)
@@ -73,10 +78,6 @@ class UserList(commands.Cog):
         users_max: int = 10,
         color_str: str = "blue",
     ):
-        try:
-            await ctx.message.delete()
-        except:
-            pass
         footer = "{} entries max".format(users_max)
         embed = await self.create_embed(title, description, footer, color_str)
         message = await ctx.send(embed=embed)
@@ -84,6 +85,8 @@ class UserList(commands.Cog):
         self.users = []
         self.message_channel = message.channel
         self.message_id = message.id
+        await asyncio.sleep(3)
+        await ctx.message.delete()
 
     @commands.command(name="userlist-clear")
     @commands.has_permissions(manage_messages=True)
@@ -95,8 +98,10 @@ class UserList(commands.Cog):
             self.users = []
             await message.edit(embed=current_embed)
             await ctx.message.add_reaction("✅")
+            await asyncio.sleep(3)
+            await ctx.message.delete()
         except discord.HTTPException:
-            return await ctx.send("No message found.")
+            return await ctx.send("No message found.", delete_after=3.0)
 
     @commands.command(name="userlist-pop", aliases=["userlist-remove"])
     @commands.has_permissions(manage_messages=True)
@@ -108,8 +113,10 @@ class UserList(commands.Cog):
             self.users.pop(index)
             await message.edit(embed=current_embed)
             await ctx.message.add_reaction("✅")
+            await asyncio.sleep(3)
+            await ctx.message.delete()
         except discord.HTTPException:
-            return await ctx.send("No message found.")
+            return await ctx.send("No message found.", delete_after=3.0)
 
     @commands.command(name="userlist-join", aliases=["userlist-enter"])
     async def join_list(self, ctx, *, comment: str):
@@ -127,11 +134,14 @@ class UserList(commands.Cog):
                         await ctx.send(
                             "Current list has reached max of {}. Please try later.".format(
                                 self.users_max
-                            )
+                            ),
+                            delete_after=3.0,
                         )
                 except discord.HTTPException:
-                    await ctx.send("List not found.")
+                    await ctx.send("List not found.", delete_after=3.0)
             else:
-                await ctx.send("You're already in the list!")
+                await ctx.send("You're already in the list!", delete_after=3.0)
         else:
-            await ctx.send("No existing list found.")
+            await ctx.send("No existing list found.", delete_after=3.0)
+        await asyncio.sleep(3)
+        await ctx.message.delete()
