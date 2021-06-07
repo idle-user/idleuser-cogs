@@ -56,6 +56,7 @@ class UserList(commands.Cog):
             self.message_channel = channel
             self.message_id = message_id
             self.users_max = int(re.sub("[^0-9]", "", current_embed.footer.text))
+            self.users = []
             for field in current_embed.fields:
                 self.users.append(field.name)
             await ctx.message.add_reaction("✅")
