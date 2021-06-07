@@ -118,7 +118,7 @@ class UserList(commands.Cog):
                     message = await self.message_channel.fetch_message(self.message_id)
                     embed = message.embeds[0]
                     if len(embed.fields) < self.users_max:
-                        embed.add_field(name=ctx.author, value=comment, inline=True)
+                        embed.add_field(name=ctx.author, value=comment, inline=False)
                         await message.edit(embed=embed)
                         self.users.append(ctx.author)
                         await ctx.message.add_reaction("✅")
