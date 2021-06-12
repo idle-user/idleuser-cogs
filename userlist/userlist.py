@@ -1,5 +1,4 @@
 import re
-import asyncio
 import string
 import logging
 
@@ -14,10 +13,14 @@ log = logging.getLogger("red.idleuser-cogs.UserList")
 class UserList(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.users_max = 10
         self.users = []
-        self.message_channel = None
-        self.message_id = None
+        self.users_max = 10
+        self.history = []
+        self.history_max = 3
+        self.history_users = []
+        self.history_on = False
+        self.userlist_message = None
+        self.deletion_delay = 5.0
         self.easy_color_list = {
             "red": 0xFF0000,
             "blue": 0x0080FF,
@@ -40,13 +43,95 @@ class UserList(commands.Cog):
         embed.description = description
         return embed
 
+    async def message_is_list(self, message):
+        if message.author == self.bot.user:
+            try:
+                current_embed = message.embeds[0]
+                self.users_max = int(re.sub("[^0-9]", "", current_embed.footer.text))
+                return True
+            except:
+                pass
+        return False
+
+    async def update_history(self):
+        if self.userlist_message:
+            async for message in self.userlist_message.channel.history(
+                limit=100, before=self.userlist_message, oldest_first=False
+            ):
+                if await self.message_is_list(message):
+                    self.history.append(message)
+                    for field in message.embeds[0].fields:
+                        self.history_users.append(field.name)
+                    if len(self.history) >= self.history_max - 1:
+                        break
+
+    @commands.command(name="userlist-info")
+    @commands.has_permissions(manage_messages=True)
+    async def view_info(self, ctx):
+        description = "Max Entries: {0.users_max}\nCurrent Entries: {1}\n\nTracking History: {0.history_on}\nHistory Max: {0.history_max}".format(
+            self, len(self.users)
+        )
+        if self.userlist_message:
+            description += "\n\n[Current List]({})".format(
+                self.userlist_message.jump_url
+            )
+        else:
+            description += (
+                "\n\nNo current UserList set.\nUse `!userlist-start` or `!userlist-set`"
+            )
+        footer = ""
+        embed = await self.create_embed(
+            "UserList Settings", description, footer, "white"
+        )
+        await ctx.send(embed=embed)
+
     @commands.command(name="userlist-max")
     @commands.has_permissions(manage_messages=True)
-    async def set_existing_list(self, ctx, users_max: int):
+    async def set_user_max(self, ctx, users_max: int):
         self.users_max = users_max
         await ctx.message.add_reaction("✅")
-        await asyncio.sleep(3)
-        await ctx.message.delete()
+        await ctx.send(
+            "UserList Max set to: `{}`.".format(users_max),
+            delete_after=self.deletion_delay,
+        )
+        await ctx.message.delete(delay=self.deletion_delay)
+
+    @commands.command(name="userlist-history")
+    @commands.has_permissions(manage_messages=True)
+    async def toggle_history(self, ctx):
+        self.history_on = not self.history_on
+        await ctx.message.add_reaction("✅")
+        await ctx.send(
+            "UserList history is now `{}`.".format("ON" if self.history_on else "OFF"),
+            delete_after=self.deletion_delay,
+        )
+        await ctx.message.delete(delay=self.deletion_delay)
+        if self.history_on:
+            await self.update_history()
+
+    @commands.command(name="userlist-history-max")
+    @commands.has_permissions(manage_messages=True)
+    async def set_history_max(self, ctx, history_max: int):
+        self.history_max = history_max
+        await ctx.message.add_reaction("✅")
+        await ctx.send(
+            "Now tracking the last `{}` UserLists.".format(self.history_max),
+            delete_after=self.deletion_delay,
+        )
+        await ctx.message.delete(delay=self.deletion_delay)
+        if self.history_on:
+            await self.update_history()
+
+    @commands.command(name="userlist-delete-delay")
+    @commands.has_permissions(manage_messages=True)
+    async def set_message_delete(self, ctx, deletion_delay: float = 5.0):
+        self.deletion_delay = deletion_delay
+        await ctx.message.add_reaction("✅")
+        await ctx.send(
+            "Message deleletion delay set to: `{}`.".format(self.deletion_delay),
+            delete_after=self.deletion_delay,
+        )
+        await ctx.message.delete(delay=self.deletion_delay)
 
     @commands.command(name="userlist-set")
     @commands.has_permissions(manage_messages=True)
@@ -55,93 +140,131 @@ class UserList(commands.Cog):
     ):
         try:
             message = await channel.fetch_message(message_id)
-            current_embed = message.embeds[0]
-            self.message_channel = channel
-            self.message_id = message_id
-            self.users_max = int(re.sub("[^0-9]", "", current_embed.footer.text))
-            self.users = []
-            for field in current_embed.fields:
-                self.users.append(field.name)
-            await ctx.message.add_reaction("✅")
-            await asyncio.sleep(3)
-            await ctx.message.delete()
+            if await self.message_is_list(message):
+                current_embed = message.embeds[0]
+                self.userlist_message = message
+                self.users_max = int(re.sub("[^0-9]", "", current_embed.footer.text))
+                self.users = []
+                for field in current_embed.fields:
+                    self.users.append(field.name)
+                await ctx.message.add_reaction("✅")
+                await ctx.message.delete(delay=self.deletion_delay)
+                if self.history_on:
+                    await self.update_history()
+            else:
+                await ctx.send("Invalid UserList.", delete_after=self.deletion_delay)
         except discord.HTTPException:
-            return await ctx.send("Existing list not found.", delete_after=3.0)
+            return await ctx.send(
+                "Existing UserList not found.", delete_after=self.deletion_delay
+            )
 
     @commands.command(name="userlist-create", aliases=["userlist-start"])
     @commands.has_permissions(manage_messages=True)
     async def create_list(
         self,
         ctx,
-        title: str = "User List",
+        title: str = "UserList",
         description: str = None,
         users_max: int = 10,
         color_str: str = "blue",
     ):
         footer = "{} entries max".format(users_max)
         embed = await self.create_embed(title, description, footer, color_str)
-        message = await ctx.send(embed=embed)
-        self.users_max = users_max
+        self.userlist_message = await ctx.send(embed=embed)
         self.users = []
-        self.message_channel = message.channel
-        self.message_id = message.id
-        await asyncio.sleep(3)
-        await ctx.message.delete()
+        self.users_max = users_max
+        await ctx.message.delete(delay=self.deletion_delay)
+        if self.history_on:
+            await self.update_history()
 
     @commands.command(name="userlist-clear")
     @commands.has_permissions(manage_messages=True)
     async def clear_list(self, ctx):
         try:
-            message = await self.message_channel.fetch_message(self.message_id)
-            current_embed = message.embeds[0]
+            current_embed = self.userlist_message.embeds[0]
             current_embed.clear_fields()
             self.users = []
-            await message.edit(embed=current_embed)
+            await self.userlist_message.edit(embed=current_embed)
             await ctx.message.add_reaction("✅")
-            await asyncio.sleep(3)
-            await ctx.message.delete()
+            await ctx.message.delete(delay=self.deletion_delay)
+            if self.history_on:
+                await self.update_history()
         except discord.HTTPException:
-            return await ctx.send("No message found.", delete_after=3.0)
+            return await ctx.send("No message found.", delete_after=self.deletion_delay)
 
-    @commands.command(name="userlist-pop", aliases=["userlist-remove"])
+    @commands.command(name="userlist-pop")
     @commands.has_permissions(manage_messages=True)
-    async def remove_from_list(self, ctx, index: int = 0):
+    async def pop_from_list(self, ctx, index: int = 0):
         try:
-            message = await self.message_channel.fetch_message(self.message_id)
-            current_embed = message.embeds[0]
+            current_embed = self.userlist_message.embeds[0]
             current_embed.remove_field(index)
             self.users.pop(index)
-            await message.edit(embed=current_embed)
+            await self.userlist_message.edit(embed=current_embed)
             await ctx.message.add_reaction("✅")
-            await asyncio.sleep(3)
-            await ctx.message.delete()
+            await ctx.message.delete(delay=self.deletion_delay)
         except discord.HTTPException:
-            return await ctx.send("No message found.", delete_after=3.0)
+            return await ctx.send("No message found.", delete_after=self.deletion_delay)
+
+    @commands.command(name="userlist-remove")
+    @commands.has_permissions(manage_messages=True)
+    async def remove_from_list(self, ctx, username: str):
+        try:
+            current_embed = self.userlist_message.embeds[0]
+            pop_index = -1
+            for field_index, field in enumerate(current_embed.fields):
+                if field.name == username:
+                    pop_index = field_index
+            if pop_index > -1:
+                self.users.pop(pop_index)
+                current_embed.remove_field(pop_index)
+                await self.userlist_message.edit(embed=current_embed)
+                await ctx.message.add_reaction("✅")
+            else:
+                await ctx.send(
+                    "Unable to find `{}` in recent list.".format(username),
+                    delete_after=self.deletion_delay,
+                )
+            await ctx.message.delete(delay=self.deletion_delay)
+        except discord.HTTPException:
+            return await ctx.send("No message found.", delete_after=self.deletion_delay)
 
     @commands.command(name="userlist-join", aliases=["userlist-enter"])
     async def join_list(self, ctx, *, comment: str):
-        if self.message_channel and self.message_id:
+        if self.userlist_message:
             if str(ctx.author) not in self.users:
-                try:
-                    message = await self.message_channel.fetch_message(self.message_id)
-                    embed = message.embeds[0]
-                    if len(embed.fields) < self.users_max:
-                        embed.add_field(name=ctx.author, value=comment, inline=False)
-                        await message.edit(embed=embed)
-                        self.users.append(str(ctx.author))
-                        await ctx.message.add_reaction("✅")
-                    else:
+                if self.history_on and str(ctx.author) in self.history_users:
+                    await ctx.send(
+                        "You've already entered in the past `{}` UserLists.\nPlease try another time.".format(
+                            self.history_max
+                        ),
+                        delete_after=self.deletion_delay,
+                    )
+                else:
+                    try:
+                        embed = self.userlist_message.embeds[0]
+                        if len(embed.fields) < self.users_max:
+                            embed.add_field(
+                                name=ctx.author, value=comment, inline=False
+                            )
+                            await self.userlist_message.edit(embed=embed)
+                            self.users.append(str(ctx.author))
+                            await ctx.message.add_reaction("✅")
+                        else:
+                            await ctx.send(
+                                "Current list has reached max of {}. Please try later.".format(
+                                    self.users_max
+                                ),
+                                delete_after=self.deletion_delay,
+                            )
+                    except discord.HTTPException:
                         await ctx.send(
-                            "Current list has reached max of {}. Please try later.".format(
-                                self.users_max
-                            ),
-                            delete_after=3.0,
+                            "List not found.", delete_after=self.deletion_delay
                         )
-                except discord.HTTPException:
-                    await ctx.send("List not found.", delete_after=3.0)
             else:
-                await ctx.send("You're already in the list!", delete_after=3.0)
+                await ctx.send(
+                    "You're already in the list!",
+                    delete_after=self.deletion_delay,
+                )
         else:
-            await ctx.send("No existing list found.", delete_after=3.0)
-        await asyncio.sleep(3)
-        await ctx.message.delete()
+            await ctx.send("No existing list found.", delete_after=self.deletion_delay)
+        await ctx.message.delete(delay=self.deletion_delay)
