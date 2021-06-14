@@ -323,21 +323,21 @@ class UserList(commands.Cog):
         - `<title>` The new title of the UserList to be displayed.
         - `<description>` The new description of the UserList to be displayed.
         """
-        try:
+        if self.userlist_message:
             current_embed = self.userlist_message.embeds[0]
             current_embed.title = title
             current_embed.description = description
             await self.userlist_message.edit(embed=current_embed)
             await ctx.message.add_reaction("✅")
             await ctx.message.delete(delay=self.deletion_delay)
-        except discord.HTTPException:
-            return await ctx.send("No message found.", delete_after=self.deletion_delay)
+        else:
+            await ctx.send("No existing list found.", delete_after=self.deletion_delay)
 
     @commands.command(name="userlist-clear")
     @commands.has_permissions(manage_messages=True)
     async def clear_list(self, ctx):
         """Empties out the current UserList."""
-        try:
+        if self.userlist_message:
             current_embed = self.userlist_message.embeds[0]
             current_embed.clear_fields()
             self.users = []
@@ -346,8 +346,8 @@ class UserList(commands.Cog):
             await ctx.message.delete(delay=self.deletion_delay)
             if self.history_on:
                 await self.update_history()
-        except discord.HTTPException:
-            return await ctx.send("No message found.", delete_after=self.deletion_delay)
+        else:
+            await ctx.send("No existing list found.", delete_after=self.deletion_delay)
 
     @commands.command(name="userlist-pop")
     @commands.has_permissions(manage_messages=True)
@@ -362,15 +362,15 @@ class UserList(commands.Cog):
 
         - `<index>` The index to remove from the UserList. Must be integer. Default is 0.
         """
-        try:
+        if self.userlist_message:
             current_embed = self.userlist_message.embeds[0]
             current_embed.remove_field(index)
             self.users.pop(index)
             await self.userlist_message.edit(embed=current_embed)
             await ctx.message.add_reaction("✅")
             await ctx.message.delete(delay=self.deletion_delay)
-        except discord.HTTPException:
-            return await ctx.send("No message found.", delete_after=self.deletion_delay)
+        else:
+            await ctx.send("No existing list found.", delete_after=self.deletion_delay)
 
     @commands.command(name="userlist-remove")
     @commands.has_permissions(manage_messages=True)
@@ -384,7 +384,7 @@ class UserList(commands.Cog):
 
         - `<username>` The user to remove off the UserList. Best to copy/paste from the UserList.
         """
-        try:
+        if self.userlist_message:
             current_embed = self.userlist_message.embeds[0]
             pop_index = -1
             for field_index, field in enumerate(current_embed.fields):
@@ -401,5 +401,5 @@ class UserList(commands.Cog):
                     delete_after=self.deletion_delay,
                 )
             await ctx.message.delete(delay=self.deletion_delay)
-        except discord.HTTPException:
-            return await ctx.send("No message found.", delete_after=self.deletion_delay)
+        else:
+            await ctx.send("No existing list found.", delete_after=self.deletion_delay)
