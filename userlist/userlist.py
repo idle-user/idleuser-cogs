@@ -309,6 +309,30 @@ class UserList(commands.Cog):
         )
         await ctx.message.delete(delay=self.deletion_delay)
 
+    @commands.command(name="userlist-rename")
+    @commands.has_permissions(manage_messages=True)
+    async def change_title_and_description(self, ctx, title: str, description: str):
+        """Change the current UserList's title and description
+
+        Example:
+            - `[p]userlist-rename "New Title" "New Description"`
+        Remember to use quotes if using more than one word per arguement.
+
+        **Arguments:**
+
+        - `<title>` The new title of the UserList to be displayed.
+        - `<description>` The new description of the UserList to be displayed.
+        """
+        try:
+            current_embed = self.userlist_message.embeds[0]
+            current_embed.title = title
+            current_embed.description = description
+            await self.userlist_message.edit(embed=current_embed)
+            await ctx.message.add_reaction("✅")
+            await ctx.message.delete(delay=self.deletion_delay)
+        except discord.HTTPException:
+            return await ctx.send("No message found.", delete_after=self.deletion_delay)
+
     @commands.command(name="userlist-clear")
     @commands.has_permissions(manage_messages=True)
     async def clear_list(self, ctx):
