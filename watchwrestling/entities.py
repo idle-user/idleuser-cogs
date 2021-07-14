@@ -97,7 +97,7 @@ class Superstar:
         embed = discord.Embed(color=quickembed.color["blue"])
         embed.set_author(
             name=self.name,
-            url=WEB_URL + "superstar?superstar_id={}".format(self.id),
+            url=WEB_URL + "projects/matches/superstar?superstar_id={}".format(self.id),
         )
         if self.dob:
             embed.add_field(
