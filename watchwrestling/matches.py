@@ -309,6 +309,7 @@ class Matches(IdleUserAPI, commands.Cog):
         bet = int(bet.replace(",", ""))
         user = await self.grab_user(ctx.author)
         match = None
+        increase_bet_attempt = False
         # find open matches matching superstar name
         try:
             openbet_match_data = await self.get_openbet_matches()
@@ -334,7 +335,7 @@ class Matches(IdleUserAPI, commands.Cog):
             # check if already bet
             try:
                 await self.get_bet_by_id(match.id, user.id)
-                raise IdleUserAPIError("Bet on this match already placed")
+                increase_bet_attempt = True
             except ResourceNotFound:
                 pass
             # gather team info by superstar name
@@ -343,7 +344,7 @@ class Matches(IdleUserAPI, commands.Cog):
             # confirm bet
             confirm_embed = quickembed.question(
                 desc="**Place this bet?**",
-                footer="All bets are final.",
+                footer="All bets are final. You can only increase existing bets.",
                 user=user,
             )
             confirm_embed.add_field(
@@ -378,10 +379,20 @@ class Matches(IdleUserAPI, commands.Cog):
             if reaction:
                 if str(reaction.emoji) == "✅":
                     # process bet
-                    await self.post_match_bet(user.id, match.id, team_id, bet)
-                    msg = "Placed `{:,}` point bet on `{}`".format(bet, team["members"])
+                    if increase_bet_attempt:
+                        await self.patch_match_bet(user.id, match.id, team_id, bet)
+                        msg = "Increased bet to `{:,}` on `{}`".format(
+                            bet, team["members"]
+                        )
+                    else:
+                        await self.post_match_bet(user.id, match.id, team_id, bet)
+                        msg = "Placed `{:,}` point bet on `{}`".format(
+                            bet, team["members"]
+                        )
                     embed = quickembed.success(
-                        desc=msg, footer="All bets are final.", user=user
+                        desc=msg,
+                        footer="All bets are final. You can only increase existing bets.",
+                        user=user,
                     )
                 else:
                     embed = quickembed.error(

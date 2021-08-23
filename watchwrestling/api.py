@@ -48,6 +48,12 @@ class IdleUserAPI:
             async with session.post(API_URL + route, json=payload) as resp:
                 return await self.handle_response(resp)
 
+    async def patch_idleusercom_response(self, route, payload={}):
+        headers = await self.get_headers()
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.patch(API_URL + route, json=payload) as resp:
+                return await self.handle_response(resp)
+
     async def handle_response(self, response):
         try:
             data = await response.json()
@@ -161,6 +167,17 @@ class IdleUserAPI:
             "points": points,
         }
         return await self.post_idleusercom_response(
+            route="watchwrestling/bet", payload=payload
+        )
+
+    async def patch_match_bet(self, user_id, match_id, team_id, points):
+        payload = {
+            "user_id": user_id,
+            "match_id": match_id,
+            "team": team_id,
+            "points": points,
+        }
+        return await self.patch_idleusercom_response(
             route="watchwrestling/bet", payload=payload
         )
 
