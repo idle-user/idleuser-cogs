@@ -18,3 +18,4 @@ Add the cogs to your instance with: `[p]repo add idleuser-cogs https://github.co
 |------|----------------|-------------|---------|
 | WatchWrestling | Development | <details><summary>Bet and rate upcoming wrestling matches.</summary>Communicate with idleuser.com's [Matches](https://idleuser.com/projects/matches/) via API.</details> | idle-user |
 | EasyEmbed | Development | <details><summary>Quickly have the bot embed messages.</summary>Stylize bot messages quickly. Includes editing existing messages.</details> | idle-user |
+| UserList | 1.0.0 | <details><summary>Creates a quick list users can join.</summary>Users with Manage Messages permission can start, clear, or pop users off the list. When max number of users have joined, no more entries are permitted.</details> | idle-user |
