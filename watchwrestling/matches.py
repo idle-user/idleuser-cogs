@@ -127,7 +127,7 @@ class Matches(IdleUserAPI, commands.Cog):
         pass
 
     @commands.command(name="stats", aliases=["me", "bal", "points"])
-    async def user_stats(self, ctx, season=6):
+    async def user_stats(self, ctx, season=7):
         user = await self.grab_user(ctx.author)
         if not user.is_registered:
             raise UserNotRegistered()
@@ -197,7 +197,7 @@ class Matches(IdleUserAPI, commands.Cog):
         pass
 
     @commands.command(name="leaderboard", aliases=["top"])
-    async def leaderboard(self, ctx, season=6):
+    async def leaderboard(self, ctx, season=7):
         stat_list = await self.get_leaderboard_by_season_id(season)
         embed = discord.Embed(description="Season {}".format(season), color=0x0080FF)
         embed.set_author(
