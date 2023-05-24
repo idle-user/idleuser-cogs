@@ -15,15 +15,15 @@ color = {
 def filler(embed, desc, footer, user):
     if user:
         if user.discord.bot:
-            embed.set_author(name=desc, icon_url=user.discord.avatar_url)
+            embed.set_author(name=desc, icon_url=user.display_avatar)
         elif user.is_registered:
             embed.set_author(
                 name="{0.discord.display_name} ({0.username})".format(user),
-                icon_url=user.discord.avatar_url,
+                icon_url=user.discord.display_avatar,
                 url=user.url,
             )
         else:
-            embed.set_author(name=user.discord, icon_url=user.discord.avatar_url)
+            embed.set_author(name=user.discord, icon_url=user.discord.display_avatar)
             embed.set_footer(text="User not registered.")
         embed.description = desc
         if footer:

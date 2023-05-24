@@ -203,7 +203,7 @@ class Matches(IdleUserAPI, commands.Cog):
         embed.set_author(
             name="Leaderboard",
             url=WEB_URL + "projects/matches/leaderboard?season_id={}".format(season),
-            icon_url=self.bot.user.avatar_url,
+            icon_url=self.bot.user.display_avatar,
         )
         lb = [
             "{}. {} ({:,})".format(i + 1, v["username"], int(v["total_points"]))
