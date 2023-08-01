@@ -99,7 +99,7 @@ class Superstar:
             name=self.name,
             url=WEB_URL + "projects/matches/superstar?superstar_id={}".format(self.id),
         )
-        if self.dob:
+        if self.dob and self.dob != '0000-00-00':
             embed.add_field(
                 name="Age",
                 value="{} ({})\n".format(self.calculate_age(), self.dob),
