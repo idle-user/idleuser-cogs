@@ -161,7 +161,7 @@ class Match:
         self.match_type = data["match_type"]
         self.last_updated_by_username = data["last_updated_by_username"]
         self.star_rating = "".join(
-            ["★" if self.user_rating_avg >= i else "☆" for i in range(1, 6)]
+            ["★" if self.user_rating_avg and self.user_rating_avg >= i else "☆" for i in range(1, 6)]
         )
         self.url = WEB_URL + "projects/matches/matches?match_id={}".format(self.id)
         self.team_list = data["team_list"]
