@@ -1,6 +1,6 @@
 import asyncio
 import logging
-
+from datetime import datetime
 
 import discord
 from redbot.core import commands
@@ -155,12 +155,17 @@ class Matches(IdleUserAPI, commands.Cog):
     async def upcoming_events(self, ctx):
         user = await self.grab_user(ctx.author)
         event_list = await self.get_future_events()
+        current_date = datetime.now().date()
+        embed_field_strings = []
+        for event in event_list:
+            event_dt_object = datetime.strptime(event["date_time"], "%Y-%m-%d %H:%M:%S")
+            event_time_format = "R" if event_dt_object.date() == current_date else "f"
+            epoch_time = int(event_dt_object.timestamp())
+            embed_field_strings.append("<t:{}:{}> - **{}**".format(epoch_time, event_time_format, event["name"]))
         embed = quickembed.info(desc="Upcoming Events (PT)", user=user)
         embed.add_field(
             name="\u200b",
-            value="\n".join(
-                ["{} - **{}**".format(e["date_time"], e["name"]) for e in event_list]
-            ),
+            value="\n".join(embed_field_strings)
         )
         await ctx.send(embed=embed)
 
