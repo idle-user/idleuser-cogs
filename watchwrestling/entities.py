@@ -1,10 +1,9 @@
 from datetime import datetime
-import json
+
+import discord
 
 from .api import WEB_URL
 from .utils import quickembed
-
-import discord
 
 
 class User:

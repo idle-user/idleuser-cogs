@@ -1,4 +1,6 @@
 import logging
+import random
+import string
 
 import aiohttp
 
@@ -16,7 +18,7 @@ from .errors import (
 API_URL = "https://api.idleuser.com/"
 WEB_URL = "https://idleuser.com/"
 
-log = logging.getLogger("red.idleuser-cogs.WatchWrestling")
+log = logging.getLogger("red.idleuser-cogs.idleuser")
 
 
 class IdleUserAPI:
@@ -93,87 +95,31 @@ class IdleUserAPI:
             route="users/discord/{}".format(discord_id)
         )
 
-    async def get_user_stats_by_season_id(self, user_id, season_id):
-        return await self.get_idleusercom_response(
-            route="watchwrestling/stats/user/{}/season/{}".format(user_id, season_id)
-        )
-
-    async def get_bet_by_id(self, match_id, user_id):
-        return await self.get_idleusercom_response(
-            route="watchwrestling/bets/match/{}/user/{}".format(match_id, user_id)
-        )
-
-    async def get_user_current_bets(self, user_id):
-        return await self.get_idleusercom_response(
-            route="watchwrestling/bets/user/{}/current/detail".format(user_id)
-        )
-
-    async def get_leaderboard_by_season_id(self, season_id):
-        return await self.get_idleusercom_response(
-            route="watchwrestling/stats/leaderboard/season/{}".format(season_id)
-        )
-
-    async def get_match_by_id(self, match_id):
-        return await self.get_idleusercom_response(
-            route="watchwrestling/matches/{}/detail".format(match_id)
-        )
-
-    async def get_openbet_matches(self):
-        return await self.get_idleusercom_response(
-            route="watchwrestling/matches/betopen/detail"
-        )
-
-    async def get_current_match(self):
-        return await self.get_idleusercom_response(
-            route="watchwrestling/matches/current/detail"
-        )
-
-    async def get_recent_match(self):
-        return await self.get_idleusercom_response(
-            route="watchwrestling/matches/recent/detail"
-        )
-
-    async def get_superstar_search(self, keyword):
-        return await self.get_idleusercom_response(
-            route="watchwrestling/superstars/search/{}".format(keyword)
-        )
-
-    async def get_superstar_by_id(self, superstar_id):
-        return await self.get_idleusercom_response(
-            route="watchwrestling/superstars/{}".format(superstar_id)
-        )
-
-    async def get_future_events(self):
-        return await self.get_idleusercom_response("watchwrestling/events/future")
-
-    async def post_match_rating(self, user_id, match_id, rating):
+    async def post_user_login_token(self, user_id):
         payload = {
             "user_id": user_id,
-            "match_id": match_id,
-            "rating": rating,
         }
         return await self.post_idleusercom_response(
-            route="watchwrestling/rate", payload=payload
+            route="users/login/token", payload=payload
         )
 
-    async def post_match_bet(self, user_id, match_id, team_id, points):
+    async def post_user_secret_token(self, user_id):
         payload = {
             "user_id": user_id,
-            "match_id": match_id,
-            "team": team_id,
-            "points": points,
         }
         return await self.post_idleusercom_response(
-            route="watchwrestling/bet", payload=payload
+            route="users/secret/token", payload=payload
         )
 
-    async def patch_match_bet(self, user_id, match_id, team_id, points):
+    async def post_user_register(self, username, discord_id=None, chatango_id=None):
         payload = {
-            "user_id": user_id,
-            "match_id": match_id,
-            "team": team_id,
-            "points": points,
+            "username": username,
+            "secret": "".join(
+                random.choices(string.ascii_letters + string.digits, k=15)
+            ),
+            "discord_id": discord_id,
+            "chatango_id": chatango_id,
         }
-        return await self.patch_idleusercom_response(
-            route="watchwrestling/bet", payload=payload
+        return await self.post_idleusercom_response(
+            route="users/register", payload=payload
         )

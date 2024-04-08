@@ -8,7 +8,7 @@
   "hidden": false,
   "install_msg": "Thank you for installing WatchWrestling by idleuser.\nFor issues, questions, or suggestions contact me in the discord support server: https://discord.gg/U5wDzWP8yD \nFor more information on my cogs, check out my github: <https://github.com/idle-user/idleuser-cogs>\"",
   "max_bot_version": "0.0.0",
-  "min_bot_version": "3.1.8",
+  "min_bot_version": "3.5.0",
   "name": "WatchWrestling",
   "permissions": [],
   "required_cogs": {},
