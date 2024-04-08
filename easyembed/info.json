@@ -2,7 +2,7 @@
   "author": [
     "idleuser"
   ],
-  "description": "Have the bot send an embeded message. Includes editing.",
+  "description": "Have the bot send an embedded message. Includes editing.",
   "disabled": false,
   "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
   "hidden": false,

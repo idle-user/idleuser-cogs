@@ -1,10 +1,5 @@
-import re
-import string
-import asyncio
 import logging
-
 import string
-import random
 
 import discord
 from redbot.core import commands, checks
@@ -39,9 +34,7 @@ class EasyEmbed(commands.Cog):
 
     @commands.command(name="easyembed", aliases=["embedthis"])
     @checks.is_owner()
-    async def embed_message(
-        self, ctx, title: str, description: str, footer: str, color: str
-    ):
+    async def embed_message(self, ctx, title: str, description: str, footer: str, color: str):
         try:
             await ctx.message.delete()
         except:
@@ -49,19 +42,17 @@ class EasyEmbed(commands.Cog):
         embed = await self.create_embed(title, description, footer, color)
         await ctx.send(embed=embed)
 
-    @commands.command(
-        name="easyembed-edit", aliases=["easyembed-update", "replacethis"]
-    )
+    @commands.command(name="easyembed-edit", aliases=["easyembed-update", "replacethis"])
     @checks.is_owner()
     async def replace_embed_message(
-        self,
-        ctx,
-        channel: discord.TextChannel,
-        message_id: int,
-        title: str,
-        description: str,
-        footer: str,
-        color: str,
+            self,
+            ctx,
+            channel: discord.TextChannel,
+            message_id: int,
+            title: str,
+            description: str,
+            footer: str,
+            color: str,
     ):
         try:
             await ctx.message.delete()
