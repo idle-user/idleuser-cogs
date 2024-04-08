@@ -1,7 +1,5 @@
-import re
-import string
 import logging
-
+import re
 import string
 
 import discord
@@ -74,7 +72,7 @@ class UserList(commands.Cog):
         """
         if self.userlist_message:
             async for message in self.userlist_message.channel.history(
-                limit=100, before=self.userlist_message, oldest_first=False
+                    limit=100, before=self.userlist_message, oldest_first=False
             ):
                 if await self.message_is_list(message):
                     self.history.append(message)
@@ -107,12 +105,12 @@ class UserList(commands.Cog):
     @commands.command(name="userlist-create", aliases=["userlist-start"])
     @commands.has_permissions(manage_messages=True)
     async def create_list(
-        self,
-        ctx,
-        title: str = "UserList",
-        description: str = None,
-        users_max: int = 10,
-        color_str: str = "blue",
+            self,
+            ctx,
+            title: str = "UserList",
+            description: str = None,
+            users_max: int = 10,
+            color_str: str = "blue",
     ):
         """Creates a new UserList in the current channel.
 
@@ -194,7 +192,7 @@ class UserList(commands.Cog):
     @commands.command(name="userlist-set")
     @commands.has_permissions(manage_messages=True)
     async def set_existing_list(
-        self, ctx, channel: discord.TextChannel, message_id: int
+            self, ctx, channel: discord.TextChannel, message_id: int
     ):
         """Define the UserList to continue using instead of starting a new one.
 
