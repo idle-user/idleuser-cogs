@@ -1,0 +1,27 @@
+{
+  "author": [
+    "idleuser"
+  ],
+  "description": "",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+  "hidden": false,
+  "install_msg": "Thank you for installing WatchWrestling by idleuser.\nFor issues, questions, or suggestions contact me in the discord support server: https://discord.gg/U5wDzWP8yD \nFor more information on my cogs, check out my github: <https://github.com/idle-user/idleuser-cogs>\"",
+  "max_bot_version": "0.0.0",
+  "min_bot_version": "3.5.0",
+  "name": "Pickem",
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "min_python_version": [
+    3,
+    7,
+    2
+  ],
+  "short": "",
+  "tags": [
+    "idlebot",
+    "pickem"
+  ],
+  "type": "COG"
+}
