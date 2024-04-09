@@ -38,27 +38,75 @@ class Pickem(IdleUserAPI, commands.Cog):
             user_stats_data = await self.get_pickem_stats_by_id(user.id)
             await ctx.send(embed=user.stats_embed(user_stats_data))
 
-    # @commands.command(name="leaderboard", aliases=["top"])
-    # async def leaderboard(self, ctx, season=7):
-    #     stat_list = await self.get_leaderboard_by_season_id(season)
-    #     embed = discord.Embed(description="Season {}".format(season), color=0x0080FF)
-    #     embed.set_author(
-    #         name="Leaderboard",
-    #         url=WEB_URL + "projects/matches/leaderboard?season_id={}".format(season),
-    #         icon_url=self.bot.user.display_avatar,
-    #     )
-    #     lb = [
-    #         "{}. {} ({:,})".format(i + 1, v["username"], int(v["total_points"]))
-    #         for i, v in enumerate(stat_list[:10])
-    #     ]
-    #     embed.add_field(
-    #         name="\u200b", value="\n".join(lb) if lb else "Nothing found", inline=True
-    #     )
-    #     await ctx.send(embed=embed)
-    #
-    # @leaderboard.error
-    # async def leaderboard_error(self, ctx, error):
-    #     pass
+    @commands.command(name="top-picks", aliases=["toppicks", "picks-leaderboard"], enabled=False)
+    async def open_pickem_prompts(self, ctx):
+        # TODO
+        pass
+
+    @commands.command(name="pickem", aliases=["pickems"])
+    async def add_pickem_prompt(self, ctx, subject: str, *choice_subjects: str):
+        user = await self.grab_user(ctx, True)
+        if not user.is_registered:
+            return
+        choices_len = len(choice_subjects) if choice_subjects is not None else 0
+        if choices_len < 2 or choices_len > 5:
+            embed = quickembed.error("Please provide at 2-5 choices.", user=user)
+            await ctx.send(embed=embed, delete_after=10)
+            return
+
+        # confirm pickem creation
+        confirm_embed = quickembed.question(
+            desc="**Confirm Pickem Creation?**",
+            footer="Pickem creations are final. Are you sure you want to submit?",
+            user=user,
+        )
+        for i, valid_reaction in enumerate(Choice.choice_emojis):
+            if i >= choices_len:
+                break
+            confirm_embed.add_field(
+                name="{} {}".format(valid_reaction, choice_subjects[i]),
+                value="",
+                inline=False,
+            )
+
+        confirm_message = await ctx.send(embed=confirm_embed)
+        await confirm_message.add_reaction("✅")
+        await confirm_message.add_reaction("❌")
+        try:
+            reaction, author = await self.bot.wait_for(
+                "reaction_add",
+                check=lambda reaction, author: author == ctx.author and str(reaction.emoji) in ["✅", "❌"],
+                timeout=15.0,
+            )
+        except asyncio.TimeoutError:
+            reaction = False
+            embed = quickembed.error(
+                desc="Pickem creation cancelled.",
+                footer="Took too long to confirm. Try again.",
+                user=user,
+            )
+            await confirm_message.edit(embed=embed)
+            await confirm_message.clear_reactions()
+
+        if reaction:
+            if str(reaction.emoji) == "✅":
+                try:
+                    prompt_data = await self.post_pickem_prompt(user_id=user.id, subject=subject,
+                                                                choices=choice_subjects)
+                except IdleUserAPIError as e:
+                    embed = quickembed.error(desc=str(e), user=user)
+                    await confirm_message.edit(embed=embed, delete_after=10)
+                    return
+
+                prompt = Prompt(prompt_data)
+                active_message = await self.start_pick(ctx, prompt=prompt, user=user, active_message=confirm_message)
+                if active_message:
+                    await active_message.clear_reactions()
+                    return
+            else:
+                embed = quickembed.error(desc="Pickem creation cancelled.", footer="Requested by user.", user=user)
+                await confirm_message.edit(embed=embed)
+                await confirm_message.clear_reactions()
 
     @commands.command(name="pick", aliases=["picks"])
     async def open_pickem_prompts(self, ctx):
@@ -169,7 +217,7 @@ class Pickem(IdleUserAPI, commands.Cog):
 
     async def start_pick(self, ctx, prompt: Prompt, user: User, active_message: discord.Message = None):
         if active_message is None:
-            await ctx.send(embed=prompt.info_embed())
+            active_message = await ctx.send(embed=prompt.info_embed())
         else:
             await active_message.edit(embed=prompt.info_embed())
         await active_message.clear_reactions()
