@@ -93,9 +93,9 @@ class IdleUserAPI:
             route="users/discord/{}".format(discord_id)
         )
 
-    async def get_pickem_prompts(self, prompt_open=0):
+    async def get_pickem_prompts(self, group_id, prompt_open=0):
         return await self.get_idleusercom_response(
-            route="pickem/prompts?open={}".format(prompt_open)
+            route="pickem/prompts?group_id={}&open={}".format(group_id, prompt_open)
         )
 
     async def get_pickem_prompt_by_id(self, prompt_id):
@@ -118,9 +118,10 @@ class IdleUserAPI:
             route="pickem/stats/{}".format(user_id)
         )
 
-    async def post_pickem_prompt(self, user_id, subject, choices):
+    async def post_pickem_prompt(self, user_id, group_id, subject, choices):
         payload = {
             "user_id": user_id,
+            "group_id": group_id,
             "subject": subject,
             "choices": choices,
         }

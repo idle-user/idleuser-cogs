@@ -275,6 +275,7 @@ class Matches(IdleUserAPI, commands.Cog):
                 reaction, author = await self.bot.wait_for(
                     "reaction_add",
                     check=lambda reaction, author: author == ctx.author
+                                                   and reaction.message.id == confirm_message.id
                                                    and str(reaction.emoji) in ["✅", "❎"],
                     timeout=15.0,
                 )

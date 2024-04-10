@@ -1,5 +1,3 @@
-import discord
-
 from .api import WEB_URL
 from .utils import quickembed
 
@@ -79,10 +77,14 @@ class Prompt:
             for choice_data in data["choices"]:
                 self.choices.append(Choice(choice_data))
         self.page_prompt_embed = None
+        self.user = None
 
-    def info_embed(self):
-        embed = discord.Embed(color=quickembed.color["blue"])
-        embed.set_author(name=self.subject)
+    def info_embed(self, caller: User = None):
+        embed = quickembed.question(
+            desc="**{}**".format(self.subject),
+            footer="created by {}".format(self.user.username),
+            user=caller,
+        )
         for i, choice in enumerate(self.choices):
             embed.add_field(name="{} {}".format(Choice.choice_emojis[i], choice.subject), value="", inline=False)
         return embed

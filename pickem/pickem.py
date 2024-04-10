@@ -56,7 +56,7 @@ class Pickem(IdleUserAPI, commands.Cog):
 
         # confirm pickem creation
         confirm_embed = quickembed.question(
-            desc="**Confirm Pickem Creation?**",
+            desc="**{}**".format(subject),
             footer="Pickem creations are final. Are you sure you want to submit?",
             user=user,
         )
@@ -75,8 +75,10 @@ class Pickem(IdleUserAPI, commands.Cog):
         try:
             reaction, author = await self.bot.wait_for(
                 "reaction_add",
-                check=lambda reaction, author: author == ctx.author and str(reaction.emoji) in ["✅", "❌"],
-                timeout=15.0,
+                check=lambda reaction, author: author == ctx.author
+                                               and reaction.message.id == active_message.id
+                                               and str(reaction.emoji) in ["✅", "❌"],
+                timeout=30.0,
             )
         except asyncio.TimeoutError:
             reaction = False
@@ -91,7 +93,9 @@ class Pickem(IdleUserAPI, commands.Cog):
         if reaction:
             if str(reaction.emoji) == "✅":
                 try:
-                    prompt_data = await self.post_pickem_prompt(user_id=user.id, subject=subject,
+                    prompt_data = await self.post_pickem_prompt(user_id=user.id,
+                                                                group_id=ctx.guild.id,
+                                                                subject=subject,
                                                                 choices=choice_subjects)
                 except IdleUserAPIError as e:
                     embed = quickembed.error(desc=str(e), user=user)
@@ -99,6 +103,7 @@ class Pickem(IdleUserAPI, commands.Cog):
                     return
 
                 prompt = Prompt(prompt_data)
+                prompt.user = user
                 active_message = await self.start_pick(ctx, prompt=prompt, user=user, active_message=confirm_message)
                 if active_message:
                     await active_message.clear_reactions()
@@ -115,7 +120,7 @@ class Pickem(IdleUserAPI, commands.Cog):
             return
 
         try:
-            open_prompts_data = await self.get_pickem_prompts(1)
+            open_prompts_data = await self.get_pickem_prompts(ctx.guild.id, 1)
         except ResourceNotFound:
             await ctx.send(embed=quickembed.error("No open Pickems available.\nCreate one with: `!pickem`", user=user))
             return
@@ -148,7 +153,6 @@ class Pickem(IdleUserAPI, commands.Cog):
         active_message = await ctx.send(embed=open_prompts[0].page_prompt_embed)
         while True:
             if page_i is not None:
-                print(f"Page: {page_i}")
                 embed = open_prompts[page_i].page_prompt_embed
                 await active_message.edit(embed=embed)
                 await active_message.clear_reactions()
@@ -162,6 +166,7 @@ class Pickem(IdleUserAPI, commands.Cog):
                 reaction, author = await self.bot.wait_for(
                     "reaction_add",
                     check=lambda reaction, author: author == ctx.author
+                                                   and reaction.message.id == active_message.id
                                                    and str(reaction.emoji) in valid_reactions,
                     timeout=15.0,
                 )
@@ -189,6 +194,8 @@ class Pickem(IdleUserAPI, commands.Cog):
                         selected_prompt_data = await self.get_pickem_prompt_by_id(open_prompts[page_i].id)
                         selected_prompt = Prompt(selected_prompt_data)
                         selected_prompt.page_prompt_embed = open_prompts[page_i].page_prompt_embed
+                        user_data = await self.get_user_by_id(selected_prompt.user_id)
+                        selected_prompt.user = User(user_data)
                         open_prompts[page_i] = selected_prompt
                     active_message = await self.start_pick(ctx,
                                                            prompt=selected_prompt,
@@ -217,9 +224,9 @@ class Pickem(IdleUserAPI, commands.Cog):
 
     async def start_pick(self, ctx, prompt: Prompt, user: User, active_message: discord.Message = None):
         if active_message is None:
-            active_message = await ctx.send(embed=prompt.info_embed())
+            active_message = await ctx.send(embed=prompt.info_embed(user))
         else:
-            await active_message.edit(embed=prompt.info_embed())
+            await active_message.edit(embed=prompt.info_embed(user))
         await active_message.clear_reactions()
 
         valid_reactions = Choice.choice_emojis + ["❌"]
@@ -235,6 +242,7 @@ class Pickem(IdleUserAPI, commands.Cog):
             reaction, author = await self.bot.wait_for(
                 "reaction_add",
                 check=lambda reaction, author: author == ctx.author
+                                               and reaction.message.id == active_message.id
                                                and str(reaction.emoji) in valid_reactions,
                 timeout=15.0,
             )
@@ -261,15 +269,15 @@ class Pickem(IdleUserAPI, commands.Cog):
                     embed = quickembed.error(desc=str(e), user=user)
 
                 if put_title:
-                    embed = quickembed.success(desc="[Pickem {}]".format(prompt.id))
+                    embed = quickembed.success(desc="{}".format(prompt.subject))
                     embed.set_author(
                         name="Pick Added",
                         icon_url=ctx.author.display_avatar
                     )
-                    embed.set_footer(text="You are allowed update existing picks.")
+                    embed.set_footer(text="You are allowed update existing picks. [pickem {}]".format(prompt.id))
                     embed.add_field(
-                        name="{}".format(prompt.subject),
-                        value="{}".format(pick_choice.subject),
+                        name="{}".format(pick_choice.subject),
+                        value="",
                         inline=True,
                     )
                     delete_after = None
