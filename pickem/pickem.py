@@ -16,36 +16,37 @@ class Pickem(IdleUserAPI, commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def grab_user(self, ctx, registration_required_message=False) -> User:
+    async def grab_user(self, ctx, author=None, registration_required_message=False) -> User:
+        author = author if author is not None else ctx.author
         try:
-            data = await self.get_user_by_discord_id(ctx.author.id)
+            data = await self.get_user_by_discord_id(author.id)
             user = User(data)
-            user.discord = ctx.author
+            user.discord = author
         except ResourceNotFound:
             user = User.unregistered_user()
-            user.discord = ctx.author
+            user.discord = author
             if registration_required_message:
                 embed = quickembed.error(
-                    desc="You must be registered to use this command. Use `!register` to register.",
+                    desc=f"You must be registered to use this command. Use `{ctx.prefix}register` to register.",
                     user=user)
                 await ctx.send(embed=embed)
         return user
 
-    @commands.command(name="pickem-stats", aliases=["pickstats", "pickemstats"])
+    @commands.command(name="pickem-stats", aliases=["pickstats", "pickemstats", "pstats"])
     async def user_stats(self, ctx):
-        user = await self.grab_user(ctx, True)
+        user = await self.grab_user(ctx, registration_required_message=True)
         if user.is_registered:
             user_stats_data = await self.get_pickem_stats_by_id(user.id)
             await ctx.send(embed=user.stats_embed(user_stats_data))
 
-    @commands.command(name="top-picks", aliases=["toppicks", "picks-leaderboard"], enabled=False)
+    @commands.command(name="top-picks", aliases=["toppicks", "picks-leaderboard", "ptop"], enabled=False)
     async def open_pickem_prompts(self, ctx):
         # TODO
         pass
 
     @commands.command(name="pickem", aliases=["pickems"])
     async def add_pickem_prompt(self, ctx, subject: str, *choice_subjects: str):
-        user = await self.grab_user(ctx, True)
+        user = await self.grab_user(ctx, registration_required_message=True)
         if not user.is_registered:
             return
         choices_len = len(choice_subjects) if choice_subjects is not None else 0
@@ -76,7 +77,7 @@ class Pickem(IdleUserAPI, commands.Cog):
             reaction, author = await self.bot.wait_for(
                 "reaction_add",
                 check=lambda reaction, author: author == ctx.author
-                                               and reaction.message.id == active_message.id
+                                               and reaction.message.id == confirm_message.id
                                                and str(reaction.emoji) in ["✅", "❌"],
                 timeout=30.0,
             )
@@ -115,14 +116,16 @@ class Pickem(IdleUserAPI, commands.Cog):
 
     @commands.command(name="pick", aliases=["picks"])
     async def open_pickem_prompts(self, ctx):
-        user = await self.grab_user(ctx, True)
+        user = await self.grab_user(ctx, registration_required_message=True)
         if not user.is_registered:
             return
 
         try:
             open_prompts_data = await self.get_pickem_prompts(ctx.guild.id, 1)
         except ResourceNotFound:
-            await ctx.send(embed=quickembed.error("No open Pickems available.\nCreate one with: `!pickem`", user=user))
+            await ctx.send(
+                embed=quickembed.error(desc=f"No open Pickems available.\nCreate one with: `{ctx.prefix}pickem`",
+                                       user=user))
             return
 
         open_prompts = []
@@ -200,7 +203,8 @@ class Pickem(IdleUserAPI, commands.Cog):
                     active_message = await self.start_pick(ctx,
                                                            prompt=selected_prompt,
                                                            user=user,
-                                                           active_message=active_message)
+                                                           active_message=active_message,
+                                                           allow_back=True)
                     if not active_message:
                         return
                 else:
@@ -215,85 +219,83 @@ class Pickem(IdleUserAPI, commands.Cog):
             else:
                 embed = quickembed.error(
                     desc="Pickems cancelled.",
-                    footer="No action received. `!picks` to try again.",
+                    footer=f"No action received. `{ctx.prefix}picks` to try again.",
                     user=user,
                 )
                 await active_message.edit(embed=embed)
                 await active_message.clear_reactions()
                 return
 
-    async def start_pick(self, ctx, prompt: Prompt, user: User, active_message: discord.Message = None):
+    async def start_pick(self, ctx, prompt: Prompt, user: User, active_message: discord.Message = None,
+                         allow_back=False):
+        prompt_embed = prompt.info_embed(caller=user, custom_title="Picks Started")
         if active_message is None:
-            active_message = await ctx.send(embed=prompt.info_embed(user))
+            active_message = await ctx.send(embed=prompt_embed)
         else:
-            await active_message.edit(embed=prompt.info_embed(user))
+            await active_message.edit(embed=prompt_embed)
         await active_message.clear_reactions()
 
         valid_reactions = Choice.choice_emojis + ["❌"]
+        if allow_back:
+            valid_reactions += ["❌"]
         max_i = len(prompt.choices)
         for i, valid_reaction in enumerate(valid_reactions):
             if i >= max_i:
                 break
             await active_message.add_reaction(valid_reaction)
-        await active_message.add_reaction("❌")
+        if allow_back:
+            await active_message.add_reaction("❌")
 
         reaction = False
         try:
-            reaction, author = await self.bot.wait_for(
-                "reaction_add",
-                check=lambda reaction, author: author == ctx.author
-                                               and reaction.message.id == active_message.id
-                                               and str(reaction.emoji) in valid_reactions,
-                timeout=15.0,
-            )
-        except asyncio.TimeoutError:
-            pass
-
-        delete_after = 5
-        if reaction:
-            if str(reaction.emoji) == "❌":
-                return active_message
-            elif str(reaction.emoji) in Choice.choice_emojis:
-                pick_choice_i = Choice.choice_emojis.index(str(reaction))
-                pick_choice = prompt.choices[pick_choice_i]
-
-                put_title = None
-                try:
-                    try:
-                        await self.post_pickem_pick(user.id, prompt.id, pick_choice.id)
-                        put_title = "Pick Added"
-                    except ConflictError as e:
-                        await self.patch_pickem_pick(user.id, prompt.id, pick_choice.id)
-                        put_title = "Pick Updated"
-                except IdleUserAPIError as e:
-                    embed = quickembed.error(desc=str(e), user=user)
-
-                if put_title:
-                    embed = quickembed.success(desc="{}".format(prompt.subject))
-                    embed.set_author(
-                        name="Pick Added",
-                        icon_url=ctx.author.display_avatar
-                    )
-                    embed.set_footer(text="You are allowed update existing picks. [pickem {}]".format(prompt.id))
-                    embed.add_field(
-                        name="{}".format(pick_choice.subject),
-                        value="",
-                        inline=True,
-                    )
-                    delete_after = None
-            else:
-                embed = quickembed.error(
-                    desc="Something went wrong.",
-                    footer="Couldn't find any valid reaction emojis.",
-                    user=user,
+            while True:
+                reaction, author = await self.bot.wait_for(
+                    "reaction_add",
+                    check=lambda reaction, author: reaction.message.id == active_message.id
+                                                   and str(reaction.emoji) in valid_reactions,
+                    timeout=15.0,
                 )
-        else:
-            embed = quickembed.error(
-                desc="Pickems cancelled.",
-                footer="No action received. `!picks` to try again.",
-                user=user,
+                if allow_back and author == ctx.author and str(reaction.emoji) == "❌":
+                    return active_message
+                elif str(reaction) != "❌" and str(reaction.emoji) in Choice.choice_emojis:
+                    pick_choice_i = Choice.choice_emojis.index(str(reaction))
+                    pick_choice = prompt.choices[pick_choice_i]
+                    await self.start_pick_submit(ctx, author, prompt, pick_choice)
+        except asyncio.TimeoutError:
+            prompt_embed = prompt.info_embed(caller=user,
+                                             custom_title=f"Picks Closed - `{ctx.prefix}picks` to start again",
+                                             red=True)
+            await active_message.edit(embed=prompt_embed)
+            await active_message.clear_reactions()
+            return False
+
+    async def start_pick_submit(self, ctx, author, prompt: Prompt, choice: Choice):
+        user = await self.grab_user(ctx, author, registration_required_message=True)
+        if not user.is_registered:
+            return
+
+        put_title = None
+        try:
+            try:
+                await self.post_pickem_pick(user.id, prompt.id, choice.id)
+                put_title = "Pick Added"
+            except ConflictError as e:
+                await self.patch_pickem_pick(user.id, prompt.id, choice.id)
+                put_title = "Pick Updated"
+        except IdleUserAPIError as e:
+            embed = quickembed.error(desc=str(e), user=user)
+
+        if put_title:
+            embed = quickembed.success(desc="{}".format(prompt.subject))
+            embed.set_author(
+                name=put_title,
+                icon_url=ctx.author.display_avatar
+            )
+            embed.set_footer(text="You are allowed update existing picks. [pickem {}]".format(prompt.id))
+            embed.add_field(
+                name="{}".format(choice.subject),
+                value="",
+                inline=True,
             )
 
-        await active_message.edit(embed=embed, delete_after=delete_after)
-        await active_message.clear_reactions()
-        return False
+        await ctx.send(embed=embed)

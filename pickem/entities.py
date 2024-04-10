@@ -79,12 +79,25 @@ class Prompt:
         self.page_prompt_embed = None
         self.user = None
 
-    def info_embed(self, caller: User = None):
-        embed = quickembed.question(
-            desc="**{}**".format(self.subject),
-            footer="created by {}".format(self.user.username),
-            user=caller,
-        )
+    def info_embed(self, caller: User = None, custom_title: str = None, red=False):
+        if red:
+            embed = quickembed.error(
+                desc="**{}**".format(self.subject),
+                footer="created by {}".format(self.user.username),
+                user=caller,
+            )
+        else:
+            embed = quickembed.question(
+                desc="**{}**".format(self.subject),
+                footer="created by {}".format(self.user.username),
+                user=caller,
+            )
+        if custom_title:
+            embed.set_author(
+                name="{}".format(custom_title),
+                icon_url=caller.discord.display_avatar,
+                url=caller.url,
+            )
         for i, choice in enumerate(self.choices):
             embed.add_field(name="{} {}".format(Choice.choice_emojis[i], choice.subject), value="", inline=False)
         return embed
