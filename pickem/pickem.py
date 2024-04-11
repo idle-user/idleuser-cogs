@@ -260,11 +260,18 @@ class Pickem(IdleUserAPI, commands.Cog):
                     return
 
             else:
-                embed = quickembed.error(
-                    desc="Pickems cancelled.",
-                    footer=f"No action received. `{ctx.prefix}picks` to try again.",
-                    user=user,
-                )
+                if is_closing_prompt:
+                    embed = quickembed.error(
+                        desc="Close Pickems cancelled.",
+                        footer=f"No action received. `{ctx.prefix}close` to try again.",
+                        user=user,
+                    )
+                else:
+                    embed = quickembed.error(
+                        desc="Select Pick cancelled.",
+                        footer=f"No action received. `{ctx.prefix}picks` to try again.",
+                        user=user,
+                    )
                 await active_message.edit(embed=embed)
                 await active_message.clear_reactions()
                 return
