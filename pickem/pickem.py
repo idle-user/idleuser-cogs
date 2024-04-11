@@ -58,8 +58,13 @@ class Pickem(IdleUserAPI, commands.Cog):
         # confirm pickem creation
         confirm_embed = quickembed.question(
             desc="**{}**".format(subject),
-            footer="Pickem creations are final. Are you sure you want to submit?",
+            footer="Pickem creations are final.",
             user=user,
+        )
+        confirm_embed.set_author(
+            name="Create Pickem?",
+            icon_url=user.discord.display_avatar,
+            url=user.url,
         )
         for i, valid_reaction in enumerate(Choice.choice_emojis):
             if i >= choices_len:

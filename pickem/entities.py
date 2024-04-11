@@ -26,21 +26,22 @@ class User:
         embed = quickembed.general(desc="Pickem Stats", user=self)
         embed.add_field(name="Picks Made", value=data["picks_made"], inline=True)
         embed.add_field(name="Pick Correct", value=data["picks_correct"], inline=True)
-        embed.add_field(
-            name="Ratio",
-            value="{:.3f}".format(
-                data["picks_correct"] / (1 if data["picks_made"] == 0 else data["picks_made"])
-            ),
-            inline=True,
-        )
+        # TODO: dont show ratio bc invalid. Prompt could have expired with no result, counts against user.
+        # embed.add_field(
+        #     name="Ratio",
+        #     value="{:.3f}".format(
+        #         data["picks_correct"] / (1 if data["picks_made"] == 0 else data["picks_made"])
+        #     ),
+        #     inline=True,
+        # )
         embed.add_field(name="Pick Correct (not own)", value=data["picks_correct_others"], inline=True)
-        embed.add_field(
-            name="Ratio (not own)",
-            value="{:.3f}".format(
-                data["picks_correct_others"] / (1 if data["picks_made"] == 0 else data["picks_made"])
-            ),
-            inline=True,
-        )
+        # embed.add_field(
+        #     name="Ratio (not own)",
+        #     value="{:.3f}".format(
+        #         data["picks_correct_others"] / (1 if data["picks_made"] == 0 else data["picks_made"])
+        #     ),
+        #     inline=True,
+        # )
         embed.add_field(name="Pickems Created", value=data["prompts_created"], inline=True)
         embed.add_field(name="Pickems Created (today)", value=data["prompts_created_today"], inline=True)
         if self.date_created:
