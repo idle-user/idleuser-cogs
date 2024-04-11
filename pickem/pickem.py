@@ -40,11 +40,11 @@ class Pickem(IdleUserAPI, commands.Cog):
             await ctx.send(embed=user.stats_embed(user_stats_data))
 
     @commands.command(name="top-picks", aliases=["toppicks", "picks-leaderboard", "ptop"], enabled=False)
-    async def open_pickem_prompts(self, ctx):
+    async def leaderboard(self, ctx):
         # TODO
         pass
 
-    @commands.command(name="pickem", aliases=["pickems"])
+    @commands.command(name="pickem", aliases=["pickems", "open"])
     async def add_pickem_prompt(self, ctx, subject: str, *choice_subjects: str):
         user = await self.grab_user(ctx, registration_required_message=True)
         if not user.is_registered:
@@ -121,7 +121,7 @@ class Pickem(IdleUserAPI, commands.Cog):
             return
 
         try:
-            open_prompts_data = await self.get_pickem_prompts(ctx.guild.id, 1)
+            open_prompts_data = await self.get_pickem_prompts(ctx.guild.id, prompt_open=1)
         except ResourceNotFound:
             await ctx.send(
                 embed=quickembed.error(desc=f"No open Pickems available.\nCreate one with: `{ctx.prefix}pickem`",
@@ -133,9 +133,9 @@ class Pickem(IdleUserAPI, commands.Cog):
         for i, prompt_data in enumerate(open_prompts_data):
             prompt = Prompt(prompt_data)
 
-            embed = quickembed.info(desc="[Pickem {}]".format(prompt.id))
+            embed = quickembed.info(desc="")
             embed.set_author(
-                name="Open Pickem Prompts",
+                name="Open Pickems",
                 icon_url=ctx.author.display_avatar
             )
             embed.set_footer(text="☑️ to Pick - Page [{}/{}]".format(i + 1, open_prompts_len))
@@ -149,7 +149,43 @@ class Pickem(IdleUserAPI, commands.Cog):
 
         await self.start_pick_pages(ctx, open_prompts, user)
 
-    async def start_pick_pages(self, ctx, open_prompts: list[Prompt], user: User):
+    @commands.command(name="mypicks", aliases=["mypickems", "close-pickems", "close-picks", "close"])
+    async def user_pickem_prompts(self, ctx):
+        user = await self.grab_user(ctx, registration_required_message=True)
+        if not user.is_registered:
+            return
+
+        try:
+            open_prompts_data = await self.get_pickem_prompts(ctx.guild.id, prompt_open=1, user_id=user.id)
+        except ResourceNotFound:
+            await ctx.send(
+                embed=quickembed.error(
+                    desc=f"You don't have any Pickems available.\nCreate one with: `{ctx.prefix}pickem`",
+                    user=user))
+            return
+
+        open_prompts = []
+        open_prompts_len = len(open_prompts_data)
+        for i, prompt_data in enumerate(open_prompts_data):
+            prompt = Prompt(prompt_data)
+
+            embed = quickembed.info(desc="")
+            embed.set_author(
+                name="Close Your Pickem?",
+                icon_url=ctx.author.display_avatar
+            )
+            embed.set_footer(text="☑️ to Pick - Page [{}/{}]".format(i + 1, open_prompts_len))
+            embed.add_field(
+                name="{}".format(prompt.subject),
+                value="",
+                inline=True,
+            )
+            prompt.page_prompt_embed = embed
+            open_prompts.append(prompt)
+
+        await self.start_pick_pages(ctx, open_prompts, user, is_closing_prompt=True)
+
+    async def start_pick_pages(self, ctx, open_prompts: list[Prompt], user: User, is_closing_prompt=False):
         page_i = None
         page_i_max = len(open_prompts) - 1
         valid_reactions = ["⬅️", "☑️", "➡️"]
@@ -200,11 +236,18 @@ class Pickem(IdleUserAPI, commands.Cog):
                         user_data = await self.get_user_by_id(selected_prompt.user_id)
                         selected_prompt.user = User(user_data)
                         open_prompts[page_i] = selected_prompt
-                    active_message = await self.start_pick(ctx,
-                                                           prompt=selected_prompt,
-                                                           user=user,
-                                                           active_message=active_message,
-                                                           allow_back=True)
+
+                    if is_closing_prompt:
+                        return await self.start_close_pickem_prompt(ctx,
+                                                                    prompt=selected_prompt,
+                                                                    user=user,
+                                                                    active_message=active_message)
+                    else:
+                        active_message = await self.start_pick(ctx,
+                                                               prompt=selected_prompt,
+                                                               user=user,
+                                                               active_message=active_message,
+                                                               allow_back=True)
                     if not active_message:
                         return
                 else:
@@ -235,7 +278,7 @@ class Pickem(IdleUserAPI, commands.Cog):
             await active_message.edit(embed=prompt_embed)
         await active_message.clear_reactions()
 
-        valid_reactions = Choice.choice_emojis + ["❌"]
+        valid_reactions = Choice.choice_emojis
         if allow_back:
             valid_reactions += ["❌"]
         max_i = len(prompt.choices)
@@ -246,7 +289,6 @@ class Pickem(IdleUserAPI, commands.Cog):
         if allow_back:
             await active_message.add_reaction("❌")
 
-        reaction = False
         try:
             while True:
                 reaction, author = await self.bot.wait_for(
@@ -299,3 +341,63 @@ class Pickem(IdleUserAPI, commands.Cog):
             )
 
         await ctx.send(embed=embed)
+
+    async def start_close_pickem_prompt(self, ctx, prompt: Prompt, user: User, active_message: discord.Message = None):
+        prompt_embed = prompt.info_embed(caller=user, custom_title="Close Pickem - Select Pick Result")
+        if active_message is None:
+            active_message = await ctx.send(embed=prompt_embed)
+        else:
+            await active_message.edit(embed=prompt_embed)
+        await active_message.clear_reactions()
+
+        valid_reactions = Choice.choice_emojis + ["❌"]
+        max_i = len(prompt.choices)
+        for i, valid_reaction in enumerate(valid_reactions):
+            if i >= max_i:
+                break
+            await active_message.add_reaction(valid_reaction)
+        await active_message.add_reaction("❌")
+
+        try:
+            reaction, author = await self.bot.wait_for(
+                "reaction_add",
+                check=lambda reaction, author: author == ctx.author
+                                               and reaction.message.id == active_message.id
+                                               and str(reaction.emoji) in valid_reactions,
+                timeout=15.0,
+            )
+            if str(reaction.emoji) in Choice.choice_emojis:
+                pick_choice_i = Choice.choice_emojis.index(str(reaction))
+                pick_choice = prompt.choices[pick_choice_i]
+                prompt_embed = await self.start_pickem_result_submit(ctx, prompt, pick_choice)
+            else:
+                prompt_embed = quickembed.error(desc="Close Pickem cancelled.", footer="Requested by user.", user=user)
+        except asyncio.TimeoutError:
+            prompt_embed = quickembed.error(desc="Close Pickem cancelled.",
+                                            footer="Ran out of time - `{ctx.prefix}close` to start again", user=user)
+
+        await active_message.edit(embed=prompt_embed)
+        await active_message.clear_reactions()
+
+    async def start_pickem_result_submit(self, ctx, prompt: Prompt, choice: Choice):
+        user = await self.grab_user(ctx, registration_required_message=True)
+        if not user.is_registered:
+            return
+
+        try:
+            await self.patch_pickem_prompt(user_id=user.id, prompt_id=prompt.id, prompt_open=0, choice_result=choice.id)
+            embed = quickembed.success(desc="{}".format(prompt.subject))
+            embed.set_author(
+                name="Pickem Closed - Result Added",
+                icon_url=ctx.author.display_avatar
+            )
+            embed.set_footer(text="Pickem results are final. [pickem {}]".format(prompt.id))
+            embed.add_field(
+                name="{}".format(choice.subject),
+                value="",
+                inline=True,
+            )
+        except IdleUserAPIError as e:
+            embed = quickembed.error(desc=str(e), user=user)
+
+        return embed
