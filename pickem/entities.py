@@ -24,24 +24,45 @@ class User:
 
     def stats_embed(self, data):
         embed = quickembed.general(desc="Pickem Stats", user=self)
-        embed.add_field(name="Picks Made", value=data["picks_made"], inline=True)
-        embed.add_field(name="Pick Correct", value=data["picks_correct"], inline=True)
-        # TODO: dont show ratio bc invalid. Prompt could have expired with no result, counts against user.
-        # embed.add_field(
-        #     name="Ratio",
-        #     value="{:.3f}".format(
-        #         data["picks_correct"] / (1 if data["picks_made"] == 0 else data["picks_made"])
-        #     ),
-        #     inline=True,
-        # )
-        embed.add_field(name="Pick Correct (not own)", value=data["picks_correct_others"], inline=True)
-        # embed.add_field(
-        #     name="Ratio (not own)",
-        #     value="{:.3f}".format(
-        #         data["picks_correct_others"] / (1 if data["picks_made"] == 0 else data["picks_made"])
-        #     ),
-        #     inline=True,
-        # )
+        embed.add_field(name="Picks", value=data["picks_made"], inline=True)
+        combined_picks_closed = data["picks_correct"] + data["picks_wrong"]
+        embed.add_field(
+            name="Ratio",
+            value="{:.2f}".format(
+                (data["picks_correct"] / (1 if combined_picks_closed == 0 else combined_picks_closed)) * 100
+            ),
+            inline=True,
+        )
+        embed.add_field(name="Pickems Created", value=data["prompts_created"], inline=False)
+        if self.date_created:
+            embed.set_footer(
+                text="Member since: {}".format(self.date_created.split()[0])
+            )
+        return embed
+
+    def stats_full_embed(self, data):
+        embed = quickembed.general(desc="Pickem Stats", user=self)
+        embed.add_field(name="Picks", value=data["picks_made"], inline=True)
+        embed.add_field(name="Correct", value=data["picks_correct"], inline=True)
+        embed.add_field(name="Wrong", value=data["picks_wrong"], inline=True)
+        combined_picks_closed = data["picks_correct"] + data["picks_wrong"]
+        embed.add_field(
+            name="Ratio",
+            value="{:.2f}%".format(
+                (data["picks_correct"] / (1 if combined_picks_closed == 0 else combined_picks_closed)) * 100
+            ),
+            inline=True,
+        )
+        embed.add_field(name=" ", value="__Pickems Created by Others__", inline=False)
+        embed.add_field(name="Picks Correct", value=data["picks_correct_others"], inline=True)
+        embed.add_field(
+            name="Ratio",
+            value="{:.2f}%".format(
+                (data["picks_correct_others"] / (1 if combined_picks_closed == 0 else combined_picks_closed)) * 100
+            ),
+            inline=True,
+        )
+        embed.add_field(name=" ", value=" ", inline=False)
         embed.add_field(name="Pickems Created", value=data["prompts_created"], inline=True)
         embed.add_field(name="Pickems Created (today)", value=data["prompts_created_today"], inline=True)
         if self.date_created:

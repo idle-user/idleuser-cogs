@@ -32,12 +32,19 @@ class Pickem(IdleUserAPI, commands.Cog):
                 await ctx.send(embed=embed)
         return user
 
-    @commands.command(name="pickem-stats", aliases=["pickstats", "pickemstats", "pstats"])
-    async def user_stats(self, ctx):
+    @commands.command(name="pickem-stats", aliases=["pickstats", "pickemstats", "pstats", "ps"])
+    async def user_stats(self, ctx, show_more=None):
         user = await self.grab_user(ctx, registration_required_message=True)
         if user.is_registered:
-            user_stats_data = await self.get_pickem_stats_by_id(user.id)
-            await ctx.send(embed=user.stats_embed(user_stats_data))
+            try:
+                user_stats_data = await self.get_pickem_stats_by_id(user.id)
+                if show_more:
+                    embed = user.stats_full_embed(user_stats_data)
+                else:
+                    embed = user.stats_embed(user_stats_data)
+                await ctx.send(embed=embed)
+            except IdleUserAPIError as e:
+                await ctx.send(embed=quickembed.error(str(e), user=user))
 
     @commands.command(name="top-picks", aliases=["toppicks", "picks-leaderboard", "ptop"], enabled=False)
     async def leaderboard(self, ctx):
@@ -311,8 +318,8 @@ class Pickem(IdleUserAPI, commands.Cog):
                 )
                 if allow_back and author == ctx.author and str(reaction.emoji) == "❌":
                     return active_message
-                elif str(reaction) != "❌" and str(reaction.emoji) in Choice.choice_emojis:
-                    pick_choice_i = Choice.choice_emojis.index(str(reaction))
+                elif str(reaction.emoji) != "❌" and str(reaction.emoji) in Choice.choice_emojis:
+                    pick_choice_i = Choice.choice_emojis.index(str(reaction.emoji))
                     pick_choice = prompt.choices[pick_choice_i]
                     await self.start_pick_submit(ctx, author, prompt, pick_choice)
         except asyncio.TimeoutError:
