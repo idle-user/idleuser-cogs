@@ -103,9 +103,9 @@ class IdleUserAPI:
             route="pickem/prompts/{}".format(prompt_id)
         )
 
-    async def get_pickem_picks(self, prompt_id=0, choice_id=0, user_id=0):
+    async def get_pickem_picks(self, prompt_id=None, choice_id=None, user_id=None):
         return await self.get_idleusercom_response(
-            route="pickem/picks?promptId={}&choiceId={}&userId={}".format(prompt_id, choice_id, user_id)
+            route="pickem/picks?prompt_id={}&choice_id={}&user_id={}".format(prompt_id, choice_id, user_id)
         )
 
     async def get_pickem_stats(self):

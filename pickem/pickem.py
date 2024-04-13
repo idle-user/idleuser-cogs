@@ -5,7 +5,7 @@ import discord
 from redbot.core import commands
 
 from .api import IdleUserAPI
-from .entities import User, Prompt, Choice
+from .entities import User, Prompt, Choice, Pick
 from .errors import ResourceNotFound, IdleUserAPIError, ConflictError
 from .utils import quickembed
 
@@ -45,6 +45,47 @@ class Pickem(IdleUserAPI, commands.Cog):
                 await ctx.send(embed=embed)
             except IdleUserAPIError as e:
                 await ctx.send(embed=quickembed.error(str(e), user=user))
+
+    @commands.command(name="mypicks", aliases=["mypick"])
+    async def user_current_picks(self, ctx: commands.Context):
+        user = await self.grab_user(ctx, registration_required_message=True)
+        if not user.is_registered:
+            return
+        try:
+            user_prompt_picks = []
+            open_prompts = await self.get_pickem_prompts(group_id=ctx.guild.id, prompt_open=1)
+            for open_prompt in open_prompts:
+                prompt = Prompt(open_prompt)
+                try:
+                    user_picks_data = await self.get_pickem_picks(prompt_id=prompt.id, user_id=user.id)
+                    user_prompt_pick = Pick(user_picks_data[0])
+                    prompt_data = await self.get_pickem_prompt_by_id(prompt_id=prompt.id)
+                    prompt = Prompt(prompt_data)
+                    prompt.choices = [choice for choice in prompt.choices if choice.id == user_prompt_pick.choice_id]
+                    if len(prompt.choices) == 1:
+                        user_prompt_picks.append(prompt)
+                except ResourceNotFound:
+                    pass
+
+            if user_prompt_picks:
+                embed = quickembed.info(desc=" ", footer="Current Picks: {}".format(len(user_prompt_picks)), user=user)
+                embed.set_author(
+                    name="{}'s Current Picks".format(user.username),
+                    icon_url=user.discord.display_avatar,
+                    url=user.url,
+                )
+                for user_prompt_pick in user_prompt_picks:
+                    embed.add_field(
+                        name="{}".format(user_prompt_pick.subject),
+                        value="{}".format(user_prompt_pick.choices[0].subject),
+                        inline=False,
+                    )
+            else:
+                embed = quickembed.error("You have no current picks.", user=user)
+
+            await ctx.send(embed=embed)
+        except ResourceNotFound as e:
+            await ctx.send(embed=quickembed.error(str(e), user=user))
 
     @commands.command(name="top-picks", aliases=["toppicks", "picks-leaderboard", "ptop"], enabled=False)
     async def leaderboard(self, ctx: commands.Context):
