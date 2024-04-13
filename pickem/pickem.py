@@ -335,7 +335,7 @@ class Pickem(IdleUserAPI, commands.Cog):
     async def start_pick(self, ctx: commands.Context, prompt: Prompt, user: User,
                          active_message: discord.Message = None,
                          allow_back=False):
-        prompt_embed = prompt.info_embed(caller=user, custom_title="Picks Started")
+        prompt_embed = prompt.info_embed(caller=user, custom_title="Picks Started (everyone can pick)")
         if active_message is None:
             active_message = await ctx.send(embed=prompt_embed)
         else:
