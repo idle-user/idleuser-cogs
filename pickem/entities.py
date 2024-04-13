@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from .api import WEB_URL
 from .utils import quickembed
 
@@ -94,6 +96,7 @@ class Prompt:
             self.expires_at = data["expires_at"]
             self.created_at = data["created_at"]
             self.updated_at = data["updated_at"]
+        self.expires_at_epoch = int(datetime.strptime(self.expires_at, "%Y-%m-%d %H:%M:%S").timestamp())
         self.choices = []
         if 'choices' in data:
             for choice_data in data["choices"]:
@@ -122,6 +125,8 @@ class Prompt:
             )
         for i, choice in enumerate(self.choices):
             embed.add_field(name="{} {}".format(Choice.choice_emojis[i], choice.subject), value="", inline=False)
+
+        embed.add_field(name=" ", value="expires: <t:{}:R>".format(self.expires_at_epoch), inline=False)
         return embed
 
 
