@@ -16,7 +16,7 @@ class Pickem(IdleUserAPI, commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def grab_user(self, ctx, author=None, registration_required_message=False) -> User:
+    async def grab_user(self, ctx: commands.Context, author=None, registration_required_message=False) -> User:
         author = author if author is not None else ctx.author
         try:
             data = await self.get_user_by_discord_id(author.id)
@@ -33,7 +33,7 @@ class Pickem(IdleUserAPI, commands.Cog):
         return user
 
     @commands.command(name="pickem-stats", aliases=["pickstats", "pickemstats", "pstats", "ps"])
-    async def user_stats(self, ctx, show_more=None):
+    async def user_stats(self, ctx: commands.Context, show_more=None):
         user = await self.grab_user(ctx, registration_required_message=True)
         if user.is_registered:
             try:
@@ -47,12 +47,12 @@ class Pickem(IdleUserAPI, commands.Cog):
                 await ctx.send(embed=quickembed.error(str(e), user=user))
 
     @commands.command(name="top-picks", aliases=["toppicks", "picks-leaderboard", "ptop"], enabled=False)
-    async def leaderboard(self, ctx):
+    async def leaderboard(self, ctx: commands.Context):
         # TODO
         pass
 
     @commands.command(name="pickem", aliases=["pickems", "open"])
-    async def add_pickem_prompt(self, ctx, subject: str, *choice_subjects: str):
+    async def add_pickem_prompt(self, ctx: commands.Context, subject: str, *choice_subjects: str):
         user = await self.grab_user(ctx, registration_required_message=True)
         if not user.is_registered:
             return
@@ -127,7 +127,7 @@ class Pickem(IdleUserAPI, commands.Cog):
                 await confirm_message.clear_reactions()
 
     @commands.command(name="pick", aliases=["picks"])
-    async def open_pickem_prompts(self, ctx):
+    async def open_pickem_prompts(self, ctx: commands.Context):
         user = await self.grab_user(ctx, registration_required_message=True)
         if not user.is_registered:
             return
@@ -161,8 +161,8 @@ class Pickem(IdleUserAPI, commands.Cog):
 
         await self.start_pick_pages(ctx, open_prompts, user)
 
-    @commands.command(name="mypicks", aliases=["mypickems", "close-pickems", "close-picks", "close"])
-    async def user_pickem_prompts(self, ctx):
+    @commands.command(name="close", aliases=["mypickems", "close-pickems", "close-picks"])
+    async def user_pickem_prompts(self, ctx: commands.Context):
         user = await self.grab_user(ctx, registration_required_message=True)
         if not user.is_registered:
             return
@@ -197,10 +197,13 @@ class Pickem(IdleUserAPI, commands.Cog):
 
         await self.start_pick_pages(ctx, open_prompts, user, is_closing_prompt=True)
 
-    async def start_pick_pages(self, ctx, open_prompts: list[Prompt], user: User, is_closing_prompt=False):
+    async def start_pick_pages(self, ctx: commands.Context,
+                               open_prompts: list[Prompt],
+                               user: User,
+                               is_closing_prompt=False):
         page_i = None
         page_i_max = len(open_prompts) - 1
-        valid_reactions = ["⬅️", "☑️", "➡️"]
+        valid_reactions = ["⬅️", "☑️", "➡️"] if len(open_prompts) > 1 else ["☑️"]
         active_message = await ctx.send(embed=open_prompts[0].page_prompt_embed)
         while True:
             if page_i is not None:
@@ -288,7 +291,8 @@ class Pickem(IdleUserAPI, commands.Cog):
                 await active_message.clear_reactions()
                 return
 
-    async def start_pick(self, ctx, prompt: Prompt, user: User, active_message: discord.Message = None,
+    async def start_pick(self, ctx: commands.Context, prompt: Prompt, user: User,
+                         active_message: discord.Message = None,
                          allow_back=False):
         prompt_embed = prompt.info_embed(caller=user, custom_title="Picks Started")
         if active_message is None:
@@ -330,7 +334,7 @@ class Pickem(IdleUserAPI, commands.Cog):
             await active_message.clear_reactions()
             return False
 
-    async def start_pick_submit(self, ctx, author, prompt: Prompt, choice: Choice):
+    async def start_pick_submit(self, ctx: commands.Context, author, prompt: Prompt, choice: Choice):
         user = await self.grab_user(ctx, author, registration_required_message=True)
         if not user.is_registered:
             return
@@ -349,8 +353,8 @@ class Pickem(IdleUserAPI, commands.Cog):
         if put_title:
             embed = quickembed.success(desc="{}".format(prompt.subject))
             embed.set_author(
-                name=put_title,
-                icon_url=ctx.author.display_avatar
+                name="{} - {}".format(user.username, put_title),
+                icon_url=user.discord.display_avatar
             )
             embed.set_footer(text="You are allowed update existing picks. [pickem {}]".format(prompt.id))
             embed.add_field(
@@ -361,7 +365,8 @@ class Pickem(IdleUserAPI, commands.Cog):
 
         await ctx.send(embed=embed)
 
-    async def start_close_pickem_prompt(self, ctx, prompt: Prompt, user: User, active_message: discord.Message = None):
+    async def start_close_pickem_prompt(self, ctx: commands.Context, prompt: Prompt, user: User,
+                                        active_message: discord.Message = None):
         prompt_embed = prompt.info_embed(caller=user, custom_title="Close Pickem - Select Pick Result")
         if active_message is None:
             active_message = await ctx.send(embed=prompt_embed)
@@ -398,7 +403,7 @@ class Pickem(IdleUserAPI, commands.Cog):
         await active_message.edit(embed=prompt_embed)
         await active_message.clear_reactions()
 
-    async def start_pickem_result_submit(self, ctx, prompt: Prompt, choice: Choice):
+    async def start_pickem_result_submit(self, ctx: commands.Context, prompt: Prompt, choice: Choice):
         user = await self.grab_user(ctx, registration_required_message=True)
         if not user.is_registered:
             return
