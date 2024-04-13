@@ -30,7 +30,7 @@ class User:
         combined_picks_closed = data["picks_correct"] + data["picks_wrong"]
         embed.add_field(
             name="Ratio",
-            value="{:.2f}".format(
+            value="{:.2f}%".format(
                 (data["picks_correct"] / (1 if combined_picks_closed == 0 else combined_picks_closed)) * 100
             ),
             inline=True,
