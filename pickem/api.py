@@ -95,7 +95,7 @@ class IdleUserAPI:
 
     async def get_pickem_prompts(self, group_id, prompt_open=None, user_id=None):
         return await self.get_idleusercom_response(
-            route="pickem/prompts?group_id={}&open={}&user_id=".format(group_id, prompt_open, user_id)
+            route="pickem/prompts?group_id={}&open={}&user_id={}".format(group_id, prompt_open, user_id)
         )
 
     async def get_pickem_prompt_by_id(self, prompt_id):
